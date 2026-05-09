@@ -8,6 +8,7 @@ import di.dicore.api.impl.DIApiBungeeImpl;
 import di.dilogin.controller.ConfigValidator;
 import di.dilogin.controller.DBController;
 import di.dilogin.controller.MainController;
+import di.dilogin.controller.SchemaController;
 import di.dilogin.controller.impl.DILoginControllerBungeeImpl;
 import di.dilogin.controller.impl.DiscordControllerImpl;
 import di.dilogin.discord.command.DiscordRegisterBungeeCommand;
@@ -69,6 +70,11 @@ public class BungeeApplication extends Plugin {
 		}
 
 		DBController.getConnect();
+		if (SchemaController.check(getDescription().getVersion(), getLogger())
+				== SchemaController.Result.REJECTED_NEWER_DB) {
+			plugin.onDisable();
+			return;
+		}
 		initDiscordEvents();
 		initDiscordCommands();
 		initDiscordSlashCommands();

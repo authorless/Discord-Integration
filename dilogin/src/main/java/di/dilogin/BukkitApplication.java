@@ -12,6 +12,7 @@ import di.dicore.api.impl.DIApiBukkitImpl;
 import di.dilogin.controller.ConfigValidator;
 import di.dilogin.controller.DBController;
 import di.dilogin.controller.MainController;
+import di.dilogin.controller.SchemaController;
 import di.dilogin.controller.impl.DILoginControllerBukkitImpl;
 import di.dilogin.controller.impl.DiscordControllerImpl;
 import di.dilogin.discord.command.DiscordRegisterBukkitCommand;
@@ -83,6 +84,10 @@ public class BukkitApplication extends JavaPlugin {
 			// If api is in own server.
 			MainController.setDiscordController(new DiscordControllerImpl());
 			DBController.getConnect();
+			if (!checkSchemaCompatibility()) {
+				plugin.getPluginLoader().disablePlugin(plugin);
+				return;
+			}
 			initInternCommands();
 			initInternEvents();
 			initDiscordEvents();
@@ -179,6 +184,11 @@ public class BukkitApplication extends JavaPlugin {
 	private void schedulePrejoinPurge() {
 		long ticks = 20L * 60L * 5L; // 5 minutes
 		getServer().getScheduler().runTaskTimerAsynchronously(plugin, PrejoinCache::purgeExpired, ticks, ticks);
+	}
+
+	private boolean checkSchemaCompatibility() {
+		SchemaController.Result result = SchemaController.check(getDescription().getVersion(), getLogger());
+		return result != SchemaController.Result.REJECTED_NEWER_DB;
 	}
 
 	private boolean isPrejoinVerificationEnabled() {
