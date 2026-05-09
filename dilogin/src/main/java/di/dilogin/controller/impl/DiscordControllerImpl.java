@@ -180,12 +180,13 @@ public class DiscordControllerImpl implements DiscordController {
 			return Optional.empty();
 
 		String discordId = discordUserOpt.get().getId();
+		Member cached = guild.getMemberById(discordId);
+		if (cached != null)
+			return Optional.of(cached);
+
 		try {
-			List<Member> memberList = guild
-					.findMembers(m -> m.getId().equals(discordId))
-					.get(10, TimeUnit.SECONDS);
-			if (!memberList.isEmpty())
-				return Optional.of(memberList.get(0));
+			Member retrieved = guild.retrieveMemberById(discordId).submit().get(10, TimeUnit.SECONDS);
+			return Optional.ofNullable(retrieved);
 		} catch (TimeoutException | ExecutionException e) {
 			api.getInternalController().getLogger().warning("Failed to find Discord member for " + player + ": " + e.getMessage());
 		} catch (InterruptedException e) {
