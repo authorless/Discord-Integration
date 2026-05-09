@@ -2,6 +2,7 @@ package di.dilogin.discord.command;
 
 import java.time.Duration;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import di.dicore.api.DIApi;
 import di.dilogin.controller.MainController;
@@ -43,7 +44,7 @@ public class PrejoinConfirmDiscordCommand implements DiscordCommand, DiscordSlas
                 msg -> event.getHook().sendMessage(msg).setEphemeral(true).queue());
     }
 
-    private void runConfirm(User discordUser, String message, java.util.function.Consumer<String> reply) {
+    private void runConfirm(User discordUser, String message, Consumer<String> reply) {
         String code = message == null ? "" : message.trim();
 
         if (code.isEmpty()) {

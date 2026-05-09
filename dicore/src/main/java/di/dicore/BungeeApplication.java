@@ -21,7 +21,7 @@ public class BungeeApplication extends Plugin {
      * bStats plugin id. Replace with the real id from https://bstats.org/getting-started
      * once the plugin is registered.
      */
-    private static final int BSTATS_PLUGIN_ID = 0;
+    private static final int BSTATS_PLUGIN_ID = 31220;
 
     @Override
     public void onEnable() {
