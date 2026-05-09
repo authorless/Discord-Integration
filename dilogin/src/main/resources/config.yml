@@ -41,6 +41,15 @@ status_embed_interval_sec: 60
 whitelist_gate_enabled: false
 whitelist_gate_channel: 0
 whitelist_gate_admin_role: 0 #Discord role id allowed to approve. 0 = anyone with MANAGE_SERVER.
+
+#Limbo mode: while a player is waiting for Discord verification, teleport them to a hidden location, switch them to
+#spectator + invisible, and remove them from chat recipients. Closes the gaps where the existing event blocking
+#leaves the player able to see ghost blocks or chat. Pure Bukkit — no extra dependencies.
+limbo_enabled: false
+limbo_world: ''   #Empty = same world the player joined into. Otherwise a world name.
+limbo_x: 0
+limbo_y: 320      #High in the sky so the player sees void instead of terrain.
+limbo_z: 0
 login_time_until_kick: 30
 login_system_enabled: true #If false, login system will not work. U can use /register command as /link command.
 register_optional_enabled: false #If true, user decide if they want register.

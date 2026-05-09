@@ -37,6 +37,8 @@ import di.dilogin.minecraft.bukkit.event.PrejoinAuthmeJoinListener;
 import di.dilogin.minecraft.bukkit.event.PrejoinVerificationListener;
 import di.dilogin.minecraft.bukkit.event.UserPreLoginEvent;
 import di.dilogin.minecraft.bukkit.event.UserTeleportEvents;
+import di.dilogin.minecraft.bukkit.limbo.LimboChatFilter;
+import di.dilogin.minecraft.bukkit.limbo.LimboController;
 import di.dilogin.minecraft.bukkit.event.impl.UserLoginExternEventImpl;
 import di.dilogin.minecraft.bukkit.event.impl.UserLoginInternEventImpl;
 import di.dilogin.minecraft.cache.PrejoinCache;
@@ -178,6 +180,10 @@ public class BukkitApplication extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(new UserLeaveEvent(), plugin);
 		getServer().getPluginManager().registerEvents(new UserTeleportEvents(), plugin);
 		getServer().getPluginManager().registerEvents(new UserPreLoginEvent(), plugin);
+		if (LimboController.isEnabled()) {
+			getServer().getPluginManager().registerEvents(new LimboChatFilter(), plugin);
+			getLogger().info("Limbo mode enabled: unverified players are sent to the configured limbo location.");
+		}
 		if (isPrejoinVerificationEnabled()) {
 			getServer().getPluginManager().registerEvents(new PrejoinVerificationListener(), plugin);
 			if (MainController.getDILoginController().isAuthmeEnabled()) {
@@ -197,6 +203,11 @@ public class BukkitApplication extends JavaPlugin {
 	private void logFastLoginStatus() {
 		boolean installed = FastLoginHook.isInstalled();
 		boolean bypass = FastLoginHook.isBypassEnabled();
+		if (installed) {
+			// Register DILogin as FastLogin's auth plugin so FastLogin stops
+			// kicking players with "No support offline Auth plugin found".
+			FastLoginHook.registerAuthHookIfPresent(getLogger());
+		}
 		if (installed && bypass) {
 			getLogger().info("FastLogin detected — premium bypass is active. Verified premium players will skip the Discord verification flow.");
 		} else if (installed) {

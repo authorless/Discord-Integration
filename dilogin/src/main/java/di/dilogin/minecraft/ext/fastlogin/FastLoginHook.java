@@ -1,10 +1,20 @@
 package di.dilogin.minecraft.ext.fastlogin;
 
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.bukkit.entity.Player;
 
 import di.dilogin.controller.MainController;
+import di.dilogin.dao.DIUserDao;
+import di.dilogin.entity.DIUser;
+import di.dilogin.minecraft.cache.UserSessionCache;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  * Reflective bridge into FastLogin. Detects whether a player connecting under
@@ -121,6 +131,156 @@ public final class FastLoginHook {
             }
         }
         return null;
+    }
+
+    /**
+     * Register DILogin as FastLogin's auth plugin so FastLogin stops complaining
+     * about "No support offline Auth plugin found" and delegates premium logins
+     * to us. Uses reflection + a JDK proxy so we never need a compile-time
+     * dependency on FastLogin.
+     *
+     * @return {@code true} if the hook was registered.
+     */
+    public static boolean registerAuthHookIfPresent(Logger logger) {
+        if (!isInstalled())
+            return false;
+
+        Class<?> authPluginIface = resolveAuthPluginInterface();
+        if (authPluginIface == null) {
+            logger.warning("FastLogin AuthPlugin interface not found — auth bridging disabled. "
+                    + "FastLogin may use a package this plugin doesn't recognise.");
+            return false;
+        }
+
+        try {
+            Object proxy = Proxy.newProxyInstance(
+                    authPluginIface.getClassLoader(),
+                    new Class<?>[] { authPluginIface },
+                    new AuthPluginInvocationHandler());
+
+            Object core = invoke(cachedPlugin, "getCore");
+            if (core == null) {
+                logger.warning("FastLogin#getCore() returned null — cannot register auth hook.");
+                return false;
+            }
+
+            // Try every plausible registration method exposed by FastLogin core.
+            String[] setterCandidates = { "setAuthPluginHook", "registerAuthPlugin", "setAuthPlugin" };
+            for (String name : setterCandidates) {
+                Method setter = findMethod(core.getClass(), name, authPluginIface);
+                if (setter == null)
+                    setter = findMethod(core.getClass(), name, Object.class);
+                if (setter != null) {
+                    setter.invoke(core, proxy);
+                    logger.info("Registered DILogin as FastLogin's auth plugin via " + name + "().");
+                    return true;
+                }
+            }
+
+            logger.warning("FastLogin core has no recognised setAuthPluginHook / registerAuthPlugin — auth bridging disabled.");
+            return false;
+        } catch (Throwable t) {
+            logger.log(Level.WARNING, "Failed to register DILogin as FastLogin auth plugin: " + t.getMessage(), t);
+            return false;
+        }
+    }
+
+    /**
+     * Resolves FastLogin's {@code AuthPlugin} interface against the runtime
+     * jar. Confirmed against FastLogin v1.12-SNAPSHOT (July 2025): the
+     * canonical package is {@code com.github.games647.fastlogin.core.hooks}.
+     * Older / forked versions are tried as a fallback.
+     */
+    private static Class<?> resolveAuthPluginInterface() {
+        if (cachedPlugin == null)
+            return null;
+        ClassLoader cl = cachedPlugin.getClass().getClassLoader();
+        try {
+            return Class.forName("com.github.games647.fastlogin.core.hooks.AuthPlugin", true, cl);
+        } catch (ClassNotFoundException ignored) {
+            // fall through to legacy candidates
+        }
+        String[] legacy = {
+                "com.github.games647.fastlogin.bukkit.hooks.AuthPlugin",
+                "com.github.games647.fastlogin.bukkit.hook.AuthPlugin",
+                "com.github.games647.fastlogin.core.hook.AuthPlugin"
+        };
+        for (String name : legacy) {
+            try {
+                return Class.forName(name, true, cl);
+            } catch (ClassNotFoundException ignored) {
+                // try next
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Bridge between FastLogin's {@code AuthPlugin<Player>} interface and
+     * DILogin. We do not implement the interface directly to avoid a compile-
+     * time dependency on FastLogin classes; a JDK proxy dispatches the three
+     * methods FastLogin actually calls.
+     */
+    private static final class AuthPluginInvocationHandler implements InvocationHandler {
+        @Override
+        public Object invoke(Object proxyObj, Method method, Object[] args) {
+            String name = method.getName();
+            try {
+                switch (name) {
+                    case "forceLogin":
+                        return forceLogin((Player) args[0]);
+                    case "isRegistered":
+                        return isRegistered((String) args[0]);
+                    case "forceRegister":
+                        return forceRegister((Player) args[0], (String) args[1]);
+                    case "toString":
+                        return "DILoginAuthPlugin";
+                    case "hashCode":
+                        return System.identityHashCode(proxyObj);
+                    case "equals":
+                        return proxyObj == args[0];
+                    default:
+                        return false;
+                }
+            } catch (Throwable t) {
+                return false;
+            }
+        }
+
+        private boolean forceLogin(Player player) {
+            if (player == null) return false;
+            try {
+                DIUserDao dao = MainController.getDILoginController().getDIUserDao();
+                if (!dao.contains(player.getName()))
+                    return false;
+                String ip = player.getAddress() != null
+                        ? player.getAddress().getAddress().getHostAddress() : "unknown";
+                UserSessionCache.addSession(player.getName(), ip);
+                java.util.Optional<DIUser> diUser = dao.get(player.getName());
+                if (diUser.isPresent() && diUser.get().getPlayerDiscord().isPresent()) {
+                    User discordUser = diUser.get().getPlayerDiscord().get();
+                    MainController.getDILoginController().loginUser(player.getName(), discordUser);
+                }
+                return true;
+            } catch (Throwable t) {
+                return false;
+            }
+        }
+
+        private boolean isRegistered(String playerName) {
+            try {
+                return MainController.getDILoginController().getDIUserDao().contains(playerName);
+            } catch (Throwable t) {
+                return false;
+            }
+        }
+
+        private boolean forceRegister(Player player, String password) {
+            // DILogin registration requires Discord linking — we cannot complete it
+            // from FastLogin's side. Returning false makes FastLogin treat the
+            // player as unregistered so the standard DILogin register flow kicks in.
+            return false;
+        }
     }
 
     /**
