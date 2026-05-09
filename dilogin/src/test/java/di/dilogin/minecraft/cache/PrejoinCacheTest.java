@@ -16,6 +16,8 @@ class PrejoinCacheTest {
         clearStaticMap("pendingRegisters");
         clearStaticMap("verifiedPlayers");
         clearStaticMap("rateLimits");
+        clearStaticMap("pendingLogins");
+        clearStaticMap("pendingAuthme");
     }
 
     @SuppressWarnings("rawtypes")
@@ -68,5 +70,29 @@ class PrejoinCacheTest {
         PrejoinCache.addPendingRegister("EXPIRED", "ghost", -1L);
         PrejoinCache.purgeExpired();
         assertFalse(PrejoinCache.consumePendingRegister("EXPIRED").isPresent());
+    }
+
+    @Test
+    void pendingLoginRoundTripByMessageId() {
+        PrejoinCache.addPendingLogin(42L, "alice", 1234L, 60_000);
+
+        assertTrue(PrejoinCache.hasPendingLoginFor("alice"));
+        PrejoinCache.PendingLogin pl = PrejoinCache.consumePendingLogin(42L).orElseThrow(AssertionError::new);
+        assertTrue(pl.playerName.equals("alice") && pl.discordUserId == 1234L);
+        assertFalse(PrejoinCache.consumePendingLogin(42L).isPresent());
+        assertFalse(PrejoinCache.hasPendingLoginFor("alice"));
+    }
+
+    @Test
+    void expiredPendingLoginIsRejected() {
+        PrejoinCache.addPendingLogin(99L, "alice", 1L, -1L);
+        assertFalse(PrejoinCache.consumePendingLogin(99L).isPresent());
+    }
+
+    @Test
+    void pendingAuthmeRoundTrip() {
+        PrejoinCache.addPendingAuthme("alice", "secret", 60_000);
+        assertTrue(PrejoinCache.consumePendingAuthme("alice").isPresent());
+        assertFalse(PrejoinCache.consumePendingAuthme("alice").isPresent());
     }
 }

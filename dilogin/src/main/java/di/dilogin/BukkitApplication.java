@@ -18,6 +18,7 @@ import di.dilogin.discord.command.DiscordRegisterBukkitCommand;
 import di.dilogin.discord.command.PrejoinConfirmDiscordCommand;
 import di.dilogin.discord.command.UserInfoDiscordCommand;
 import di.dilogin.discord.command.UserListDiscordCommand;
+import di.dilogin.discord.event.PrejoinLoginReactionListener;
 import di.dilogin.discord.event.UserLoginReactionMessageBukkitEvent;
 import di.dilogin.discord.util.SlashCommandsConfiguration;
 import di.dilogin.minecraft.bukkit.command.ForceLoginBukkitCommand;
@@ -26,6 +27,7 @@ import di.dilogin.minecraft.bukkit.command.UnregisterBukkitCommand;
 import di.dilogin.minecraft.bukkit.command.UserInfoBukkitCommand;
 import di.dilogin.minecraft.bukkit.event.UserBlockEvents;
 import di.dilogin.minecraft.bukkit.event.UserLeaveEvent;
+import di.dilogin.minecraft.bukkit.event.PrejoinAuthmeJoinListener;
 import di.dilogin.minecraft.bukkit.event.PrejoinVerificationListener;
 import di.dilogin.minecraft.bukkit.event.UserPreLoginEvent;
 import di.dilogin.minecraft.bukkit.event.UserTeleportEvents;
@@ -158,13 +160,13 @@ public class BukkitApplication extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(new UserTeleportEvents(), plugin);
 		getServer().getPluginManager().registerEvents(new UserPreLoginEvent(), plugin);
 		if (isPrejoinVerificationEnabled()) {
-			if (MainController.getDILoginController().isAuthmeEnabled()) {
-				getLogger().warning("prejoin_verification is enabled but AuthMe is also active. "
-						+ "AuthMe registration cannot run while the player is offline; this combination is not supported.");
-			}
 			getServer().getPluginManager().registerEvents(new PrejoinVerificationListener(), plugin);
+			if (MainController.getDILoginController().isAuthmeEnabled()) {
+				getServer().getPluginManager().registerEvents(new PrejoinAuthmeJoinListener(), plugin);
+				getLogger().info("Prejoin verification + AuthMe: registration deferred to first successful join.");
+			}
 			schedulePrejoinPurge();
-			getLogger().info("Prejoin verification enabled: unregistered players will be kicked and must confirm via Discord.");
+			getLogger().info("Prejoin verification enabled: unregistered players are kicked and must confirm via Discord.");
 		}
 	}
 
@@ -195,6 +197,9 @@ public class BukkitApplication extends JavaPlugin {
 	 */
 	private void initDiscordEvents() {
 		api.registerDiscordEvent(new UserLoginReactionMessageBukkitEvent());
+		if (isPrejoinVerificationEnabled()) {
+			api.registerDiscordEvent(new PrejoinLoginReactionListener());
+		}
 		if (MainController.getDILoginController().isSyncroRolEnabled()) {
 			api.registerDiscordEvent(new GuildMemberRoleEvent());
 		}

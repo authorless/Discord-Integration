@@ -29,6 +29,19 @@ public class PrejoinCache {
     private static final Map<String, Long> verifiedPlayers = new ConcurrentHashMap<>();
 
     /**
+     * Pending login DMs (registered players awaiting Discord reaction):
+     * messageId -> {playerName, expiryEpochMillis, discordUserId}.
+     */
+    private static final Map<Long, PendingLogin> pendingLogins = new ConcurrentHashMap<>();
+
+    /**
+     * Pending AuthMe registrations (player completed +confirm, AuthMe register
+     * deferred until they actually join):
+     * playerName -> {password, expiryEpochMillis}.
+     */
+    private static final Map<String, PendingAuthme> pendingAuthme = new ConcurrentHashMap<>();
+
+    /**
      * Per-IP rate-limit window: ip -> {count, windowStartMillis}.
      * Prevents an attacker from spamming join attempts to fill the cache.
      */
@@ -90,10 +103,41 @@ public class PrejoinCache {
         return expiry != null && expiry >= System.currentTimeMillis();
     }
 
+    public static void addPendingLogin(long messageId, String playerName, long discordUserId, long ttlMillis) {
+        pendingLogins.put(messageId, new PendingLogin(playerName, discordUserId,
+                System.currentTimeMillis() + ttlMillis));
+    }
+
+    public static Optional<PendingLogin> consumePendingLogin(long messageId) {
+        PendingLogin pl = pendingLogins.remove(messageId);
+        if (pl == null || pl.expiry < System.currentTimeMillis())
+            return Optional.empty();
+        return Optional.of(pl);
+    }
+
+    public static boolean hasPendingLoginFor(String playerName) {
+        long now = System.currentTimeMillis();
+        return pendingLogins.values().stream()
+                .anyMatch(p -> p.playerName.equals(playerName) && p.expiry >= now);
+    }
+
+    public static void addPendingAuthme(String playerName, String password, long ttlMillis) {
+        pendingAuthme.put(playerName, new PendingAuthme(password, System.currentTimeMillis() + ttlMillis));
+    }
+
+    public static Optional<String> consumePendingAuthme(String playerName) {
+        PendingAuthme pa = pendingAuthme.remove(playerName);
+        if (pa == null || pa.expiry < System.currentTimeMillis())
+            return Optional.empty();
+        return Optional.of(pa.password);
+    }
+
     public static void purgeExpired() {
         long now = System.currentTimeMillis();
         pendingRegisters.entrySet().removeIf(e -> e.getValue().expiry < now);
         verifiedPlayers.entrySet().removeIf(e -> e.getValue() < now);
+        pendingLogins.entrySet().removeIf(e -> e.getValue().expiry < now);
+        pendingAuthme.entrySet().removeIf(e -> e.getValue().expiry < now);
         rateLimits.entrySet().removeIf(e -> now - e.getValue().windowStart > RATE_WINDOW_MILLIS);
     }
 
@@ -103,6 +147,28 @@ public class PrejoinCache {
 
         PendingRegister(String playerName, long expiry) {
             this.playerName = playerName;
+            this.expiry = expiry;
+        }
+    }
+
+    public static class PendingLogin {
+        public final String playerName;
+        public final long discordUserId;
+        public final long expiry;
+
+        PendingLogin(String playerName, long discordUserId, long expiry) {
+            this.playerName = playerName;
+            this.discordUserId = discordUserId;
+            this.expiry = expiry;
+        }
+    }
+
+    private static final class PendingAuthme {
+        final String password;
+        final long expiry;
+
+        PendingAuthme(String password, long expiry) {
+            this.password = password;
             this.expiry = expiry;
         }
     }

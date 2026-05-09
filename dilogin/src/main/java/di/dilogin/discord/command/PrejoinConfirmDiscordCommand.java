@@ -9,6 +9,7 @@ import di.dilogin.controller.MainController;
 import di.dilogin.controller.file.CommandAliasController;
 import di.dilogin.controller.file.LangController;
 import di.dilogin.dao.DIUserDao;
+import di.dilogin.entity.CodeGenerator;
 import di.dilogin.entity.DIUser;
 import di.dilogin.minecraft.cache.PrejoinCache;
 import di.internal.entity.DiscordCommand;
@@ -75,7 +76,26 @@ public class PrejoinConfirmDiscordCommand implements DiscordCommand, DiscordSlas
         userDao.add(new DIUser(playerName, Optional.of(discordUser)));
         PrejoinCache.markVerified(playerName, graceMillis());
 
+        if (MainController.getDILoginController().isAuthmeEnabled()) {
+            String password = CodeGenerator.getAuthmePassword(api);
+            // TTL doubles the grace window so the player has time to actually join
+            // and the PlayerJoinEvent listener can finalise the AuthMe registration.
+            PrejoinCache.addPendingAuthme(playerName, password, graceMillis() * 2);
+            sendPasswordDm(discordUser, playerName, password);
+        }
+
         reply.accept(LangController.getString(discordUser, playerName, "prejoin_confirm_success"));
+    }
+
+    private void sendPasswordDm(User discordUser, String playerName, String password) {
+        String dmText = LangController.getString(discordUser, playerName, "prejoin_authme_password_dm")
+                .replace("%authme_password%", password);
+        discordUser.openPrivateChannel().queue(channel ->
+                channel.sendMessage(dmText).queue(null,
+                        err -> api.getInternalController().getLogger()
+                                .warning("Failed to send AuthMe password DM to " + playerName + ": " + err.getMessage())),
+                err -> api.getInternalController().getLogger()
+                        .warning("Failed to open private channel for " + playerName + ": " + err.getMessage()));
     }
 
     private long graceMillis() {

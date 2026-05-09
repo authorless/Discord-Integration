@@ -14,10 +14,11 @@ register_max_discord_accounts: 3
 register_code_length: 5
 authme_password_length: 20 #Length of the random password generated for AuthMe on registration. Min 8.
 
-#Prejoin verification: kick unregistered players and require them to confirm a code on Discord before they can join.
-#When enabled, unregistered players are denied entry and shown a one-time code; they run +confirm <code> on Discord, then re-join.
-#Already-registered players keep using the standard in-server login flow.
-#Note: not compatible with AuthMe — the player is offline at confirm time, so no AuthMe password can be set.
+#Prejoin verification: kick players on connect and require Discord verification before letting them in.
+# - Unregistered players: kicked with a one-time code; they run +confirm <code> on Discord, then re-join.
+# - Already-registered players (without active session): kicked + DM with reaction; they react on Discord, then re-join.
+#AuthMe: when AuthMe is detected the password is generated at +confirm time, sent via DM and applied on the first successful join.
+#AuthMe deferred only works in direct Bukkit mode (no Bungee proxy) since the cache lives in the JVM that ran +confirm.
 prejoin_verification: false
 prejoin_verification_code_ttl_min: 10 #Minutes the code stays valid before the player must reconnect to get a new one.
 prejoin_verification_grace_sec: 60 #Seconds the player has to actually reconnect after confirming on Discord.

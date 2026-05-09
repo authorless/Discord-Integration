@@ -14,6 +14,7 @@ import di.dilogin.discord.command.DiscordRegisterBungeeCommand;
 import di.dilogin.discord.command.PrejoinConfirmDiscordCommand;
 import di.dilogin.discord.command.UserInfoDiscordCommand;
 import di.dilogin.discord.command.UserListDiscordCommand;
+import di.dilogin.discord.event.PrejoinLoginReactionListener;
 import di.dilogin.discord.event.UserLoginReactionMessageBungeeEvent;
 import di.dilogin.discord.util.SlashCommandsConfiguration;
 import di.dilogin.minecraft.bungee.command.ForceLoginBungeeCommand;
@@ -174,6 +175,9 @@ public class BungeeApplication extends Plugin {
 	 */
 	private void initDiscordEvents() {
 		api.registerDiscordEvent(new UserLoginReactionMessageBungeeEvent());
+		if (isPrejoinVerificationEnabled()) {
+			api.registerDiscordEvent(new PrejoinLoginReactionListener());
+		}
 		if (MainController.getDILoginController().isSyncroRolEnabled()) {
 
 		}
