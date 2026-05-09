@@ -15,6 +15,7 @@ jobs:
     outputs:
       release_created: ${{ steps.release.outputs.release_created }}
       tag_name: ${{ steps.release.outputs.tag_name }}
+      version: ${{ steps.release.outputs.version }}
     steps:
       - uses: googleapis/release-please-action@v4
         id: release
@@ -26,21 +27,67 @@ jobs:
     needs: release-please
     if: ${{ needs.release-please.outputs.release_created == 'true' }}
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.release-please.outputs.version }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.release-please.outputs.tag_name }}
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'
+          java-version: '17'
           cache: maven
+
       - name: Build with Maven
-        run: mvn -B -ntp clean package
-      - name: Upload jars to release
+        run: mvn -B -ntp clean package -DskipTests
+
+      - name: Stage release artifacts
+        run: |
+          mkdir -p dist
+          cp "dicore/target/dicore-${VERSION}-shaded.jar"   "dist/DICore-${VERSION}.jar"
+          cp "dicore/target/dicore-${VERSION}-noslf4j.jar"  "dist/DICore-${VERSION}-noslf4j.jar"
+          cp "dilogin/target/dilogin-${VERSION}.jar"        "dist/DILogin-${VERSION}.jar"
+          cp "dilitebanslogs/target/dilitebanslogs-${VERSION}.jar" "dist/DILitebansLogs-${VERSION}.jar"
+          ls -lh dist
+
+      - name: Write release usage notes
+        run: |
+          cat > release_notes_appendix.md <<'EOF'
+
+          ---
+
+          ## Installation
+
+          Drop the following jars into your server's `plugins/` folder:
+
+          ### Required
+          - **`DICore-<version>.jar`** *or* **`DICore-<version>-noslf4j.jar`** — pick **one** (see below).
+          - **`DILogin-<version>.jar`** — registration & login system.
+
+          ### Optional
+          - **`DILitebansLogs-<version>.jar`** — sends LiteBans punishments to Discord.
+
+          ## Which DICore jar do I use?
+
+          | Jar | When to use |
+          |-----|-------------|
+          | `DICore-<version>.jar` | **Default choice.** Bundles SLF4J + log4j so JDA's logs work out of the box. Use this on Spigot, Paper, BungeeCord, Velocity, or any server that does **not** already provide SLF4J on the plugin classpath. |
+          | `DICore-<version>-noslf4j.jar` | Use **only** if your server (or another plugin) already exposes SLF4J — e.g. modern Paper builds, Velocity, or hybrid servers. Loading two SLF4J copies causes `LinkageError` / `ClassCastException`. If you see those errors, switch to this variant. |
+
+          When in doubt, start with `DICore-<version>.jar`. If the console complains about duplicate SLF4J bindings on startup, switch to `-noslf4j`.
+
+          ## Compatibility notes
+
+          - **Java 11+ required** for the Discord bot side (JDA 5 dependency). The Minecraft server itself can run any modern Java.
+          - JDA classes are shaded under `di.shaded.jda` — this plugin no longer conflicts with other Discord plugins (Vixio, DiscordSRV, etc.) that bundle their own JDA copy.
+          EOF
+
+      - name: Upload jars + append usage notes to release
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.release-please.outputs.tag_name }}
-          files: |
-            dicore/target/*.jar
-            dilogin/target/*.jar
-            dilitebanslogs/target/*.jar
-            internal/target/*.jar
+          files: dist/*.jar
+          append_body: true
+          body_path: release_notes_appendix.md
