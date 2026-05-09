@@ -1,8 +1,12 @@
 package di.dicore;
 
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 import di.dicore.event.BotStatusBungeeEvent;
 import di.internal.controller.CoreController;
 import di.internal.controller.impl.CoreControllerBungeeImpl;
+import net.dv8tion.jda.api.JDA;
 import net.md_5.bungee.api.plugin.Plugin;
 
 public class BungeeApplication extends Plugin {
@@ -27,8 +31,22 @@ public class BungeeApplication extends Plugin {
      */
     @Override
     public void onDisable() {
-        if (internalController != null)
-            internalController.getBot().getApi().get().shutdownNow();
+        if (internalController != null && internalController.getBot() != null) {
+            Optional<JDA> apiOpt = internalController.getBot().getApi();
+            if (apiOpt != null && apiOpt.isPresent()) {
+                JDA jda = apiOpt.get();
+                jda.shutdown();
+                try {
+                    if (!jda.awaitShutdown(10, TimeUnit.SECONDS)) {
+                        jda.shutdownNow();
+                        jda.awaitShutdown(5, TimeUnit.SECONDS);
+                    }
+                } catch (InterruptedException e) {
+                    jda.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
 
         getLogger().info("Plugin disabled");
     }

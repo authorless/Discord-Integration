@@ -1,7 +1,11 @@
 package di.dicore;
 
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+
 import di.dicore.event.BotStatusBukkitEvent;
 import di.internal.controller.impl.CoreControllerBukkitImpl;
+import net.dv8tion.jda.api.JDA;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -47,8 +51,22 @@ public class BukkitApplication extends JavaPlugin {
      */
     @Override
     public void onDisable() {
-        if (internalController != null)
-            internalController.getBot().getApi().get().shutdownNow();
+        if (internalController != null && internalController.getBot() != null) {
+            Optional<JDA> apiOpt = internalController.getBot().getApi();
+            if (apiOpt != null && apiOpt.isPresent()) {
+                JDA jda = apiOpt.get();
+                jda.shutdown();
+                try {
+                    if (!jda.awaitShutdown(10, TimeUnit.SECONDS)) {
+                        jda.shutdownNow();
+                        jda.awaitShutdown(5, TimeUnit.SECONDS);
+                    }
+                } catch (InterruptedException e) {
+                    jda.shutdownNow();
+                    Thread.currentThread().interrupt();
+                }
+            }
+        }
 
         getLogger().info("Plugin disabled");
     }
