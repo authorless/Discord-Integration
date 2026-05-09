@@ -185,6 +185,8 @@ public final class ConfigAutoMerger {
 
     @SuppressWarnings("unchecked")
     private static void reloadConfigManager(File userFile, ConfigManager configManager, Logger logger) {
+        if (configManager == null)
+            return;
         Yaml yaml = new Yaml();
         try (FileInputStream fis = new FileInputStream(userFile)) {
             Object loaded = yaml.load(fis);
