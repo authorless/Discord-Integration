@@ -8,6 +8,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import di.internal.controller.CoreController;
+import di.internal.utils.TokenMasker;
 import lombok.Getter;
 import lombok.Setter;
 import net.dv8tion.jda.api.JDA;
@@ -103,15 +104,16 @@ public class DiscordBot {
 			onConnectToDiscord();
 			checkPermissions();
 		} catch (InterruptedException e) {
-			controller.getLogger().log(Level.SEVERE, "The Bot failed to start (interrupted).", e);
+			controller.getLogger().severe("The Bot failed to start (interrupted): " + TokenMasker.mask(e));
 			controller.disablePlugin();
 			Thread.currentThread().interrupt();
 		} catch (TimeoutException e) {
 			controller.getLogger().severe("The Bot failed to start: Discord did not become ready within 60s.");
 			controller.disablePlugin();
 		} catch (Exception e) {
-			controller.getLogger().log(Level.SEVERE,
-					"The Bot failed to start. Verify the token and network connectivity.", e);
+			controller.getLogger().severe(
+					"The Bot failed to start. Verify the token and network connectivity. "
+							+ TokenMasker.mask(e));
 			controller.disablePlugin();
 		}
 	}

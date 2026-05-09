@@ -11,9 +11,12 @@ import di.dilogin.dao.DIUserDao;
 import di.dilogin.entity.DIUser;
 import di.dilogin.minecraft.cache.PrejoinCache;
 import di.internal.entity.DiscordCommand;
+import di.internal.entity.DiscordSlashCommand;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.User;
+import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
+import net.dv8tion.jda.api.interactions.commands.OptionMapping;
 
 /**
  * Discord command used by the prejoin verification flow.
@@ -21,45 +24,57 @@ import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
  * shown in their kick message. On success the player is registered in the DB
  * and marked as verified so the next join attempt succeeds.
  */
-public class PrejoinConfirmDiscordCommand implements DiscordCommand {
+public class PrejoinConfirmDiscordCommand implements DiscordCommand, DiscordSlashCommand {
 
     private final DIUserDao userDao = MainController.getDILoginController().getDIUserDao();
     private final DIApi api = MainController.getDIApi();
 
     @Override
     public void execute(String message, MessageReceivedEvent event) {
-        User discordUser = event.getAuthor();
+        runConfirm(event.getAuthor(), message, msg -> replyTemp(event, msg));
+    }
+
+    @Override
+    public void execute(SlashCommandInteractionEvent event) {
+        event.deferReply().setEphemeral(true).queue();
+        OptionMapping codeOpt = event.getOption("code");
+        String code = codeOpt == null ? "" : codeOpt.getAsString();
+        runConfirm(event.getUser(), code,
+                msg -> event.getHook().sendMessage(msg).setEphemeral(true).queue());
+    }
+
+    private void runConfirm(User discordUser, String message, java.util.function.Consumer<String> reply) {
         String code = message == null ? "" : message.trim();
 
         if (code.isEmpty()) {
-            replyTemp(event, LangController.getString("prejoin_confirm_missing_code"));
+            reply.accept(LangController.getString("prejoin_confirm_missing_code"));
             return;
         }
 
         if (userDao.containsDiscordId(discordUser.getIdLong())
                 && userDao.getDiscordUserAccounts(discordUser.getIdLong())
                         >= api.getInternalController().getConfigManager().getInt("register_max_discord_accounts")) {
-            replyTemp(event, LangController.getString("register_max_accounts"));
+            reply.accept(LangController.getString("register_max_accounts"));
             return;
         }
 
         Optional<PrejoinCache.PendingRegister> pendingOpt = PrejoinCache.consumePendingRegister(code);
         if (!pendingOpt.isPresent()) {
-            replyTemp(event, LangController.getString("prejoin_confirm_invalid_code"));
+            reply.accept(LangController.getString("prejoin_confirm_invalid_code"));
             return;
         }
 
         String playerName = pendingOpt.get().playerName;
 
         if (userDao.contains(playerName)) {
-            replyTemp(event, LangController.getString("register_already_exists"));
+            reply.accept(LangController.getString("register_already_exists"));
             return;
         }
 
         userDao.add(new DIUser(playerName, Optional.of(discordUser)));
         PrejoinCache.markVerified(playerName, graceMillis());
 
-        replyTemp(event, LangController.getString(discordUser, playerName, "prejoin_confirm_success"));
+        reply.accept(LangController.getString(discordUser, playerName, "prejoin_confirm_success"));
     }
 
     private long graceMillis() {

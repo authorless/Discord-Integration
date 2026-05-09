@@ -3,91 +3,85 @@ package di.dilogin.controller.dbconnection;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Connection;
-import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.logging.Level;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 import di.dilogin.controller.MainController;
 import di.internal.controller.InternalController;
-import lombok.NoArgsConstructor;
 
 /**
- * SQLite controller class.
+ * SQLite controller backed by HikariCP connection pool.
+ * SQLite supports a single writer at a time, so the pool is constrained to 1.
  */
-@NoArgsConstructor
 public class DBConnectionSqliteImpl implements DBConnection {
 
-	/**
-	 * Main connection.
-	 */
-	private static Connection connection = null;
+    private static HikariDataSource dataSource;
 
-	/**
-	 * Main plugin controller.
-	 */
-	private static final InternalController controller = MainController.getDIApi().getInternalController();
+    private static final InternalController controller = MainController.getDIApi().getInternalController();
 
-	/**
-	 * @return Connection to the database. If it does not exist, it creates it.
-	 */
-	public synchronized Connection getConnect() {
-		try {
-			if (connection == null || connection.isClosed()) {
-				initDB();
-			}
-		} catch (SQLException e) {
-			controller.getLogger().log(Level.SEVERE, "DBConnectionSqliteImpl - getConnect validation", e);
-			initDB();
-		}
-		return connection;
-	}
+    public DBConnectionSqliteImpl() {
+        // initialised lazily on first getConnect()
+    }
 
-	/**
-	 * Init DataBase.
-	 */
-	private void initDB() {
-		controller.getLogger().info("Database connection type: SQLITE");
-		try {
-			File dataFolder = new File(
-					controller.getDataFolder().getAbsolutePath(), "users.db");
-			if (!dataFolder.exists()) {
-				boolean success = dataFolder.createNewFile();
-				if (!success) {
-					controller.getLogger().severe("Failed to create database file");
-					controller.disablePlugin();
-				}
-			}
-			Class.forName("org.sqlite.JDBC");
-			connection = DriverManager.getConnection("jdbc:sqlite:" + dataFolder);
-			initTables();
-		} catch (SQLException | ClassNotFoundException | IOException e) {
-            MainController.getDIApi().getInternalController().getLogger().log(Level.SEVERE,"DBConnectionSlqiteImpl - initTables",e);
-			controller.disablePlugin();
-		}
+    @Override
+    public synchronized Connection getConnect() {
+        if (dataSource == null || dataSource.isClosed()) {
+            initPool();
+        }
+        try {
+            return dataSource.getConnection();
+        } catch (SQLException e) {
+            controller.getLogger().log(Level.SEVERE, "DBConnectionSqliteImpl - getConnection", e);
+            throw new IllegalStateException("Failed to obtain SQLite connection", e);
+        }
+    }
 
-	}
+    private void initPool() {
+        controller.getLogger().info("Database connection type: SQLITE (Hikari pool)");
+        try {
+            File dataFolder = new File(controller.getDataFolder().getAbsolutePath(), "users.db");
+            if (!dataFolder.exists()) {
+                if (!dataFolder.createNewFile()) {
+                    controller.getLogger().severe("Failed to create database file");
+                    controller.disablePlugin();
+                    return;
+                }
+            }
+            Class.forName("org.sqlite.JDBC");
 
-	/**
-	 * @return Tables required for the database.
-	 */
-	private static ArrayList<String> createTables() {
-		ArrayList<String> sql = new ArrayList<>();
-		sql.add("CREATE TABLE IF NOT EXISTS user(username text primary key, discord_id varchar(30));");
-		return sql;
-	}
+            HikariConfig config = new HikariConfig();
+            config.setJdbcUrl("jdbc:sqlite:" + dataFolder.getAbsolutePath());
+            config.setMaximumPoolSize(1); // SQLite: single writer
+            config.setMinimumIdle(1);
+            config.setConnectionTimeout(10_000);
+            config.setPoolName("DILogin-SQLite");
 
-	/**
-	 * Processes the tables in the database.
-	 */
-	private static void initTables() {
-		try (Statement stmt = connection.createStatement()) {
-			ArrayList<String> sql = createTables();
-			for (String s : sql)
-				stmt.execute(s);
-		} catch (SQLException e) {
-            MainController.getDIApi().getInternalController().getLogger().log(Level.SEVERE,"DBConnectionSqliteImpl - initTables",e);
-		}
-	}
+            dataSource = new HikariDataSource(config);
+            initTables();
+        } catch (ClassNotFoundException | IOException e) {
+            controller.getLogger().log(Level.SEVERE, "DBConnectionSqliteImpl - initPool", e);
+            controller.disablePlugin();
+        }
+    }
+
+    private static ArrayList<String> createTables() {
+        ArrayList<String> sql = new ArrayList<>();
+        sql.add("CREATE TABLE IF NOT EXISTS user(username text primary key, discord_id varchar(30));");
+        return sql;
+    }
+
+    private void initTables() {
+        try (Connection conn = dataSource.getConnection();
+             Statement stmt = conn.createStatement()) {
+            for (String s : createTables())
+                stmt.execute(s);
+        } catch (SQLException e) {
+            controller.getLogger().log(Level.SEVERE, "DBConnectionSqliteImpl - initTables", e);
+        }
+    }
 }

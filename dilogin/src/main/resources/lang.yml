@@ -19,6 +19,7 @@ prejoin_register_kick_message: "&eYou are not registered.&r\n\nSend &6+confirm %
 prejoin_confirm_missing_code: "Usage: +confirm <code>"
 prejoin_confirm_invalid_code: "That code is invalid or has expired. Reconnect to the server to get a new one."
 prejoin_confirm_success: "Registration confirmed for %minecraft_username%. You can now connect to the server."
+prejoin_rate_limited: "&cToo many connection attempts.&r Wait a minute before trying again."
 register_discord_title: "Register in %minecraft_servername%."
 register_discord_success: "Your account has been successfully linked with **%minecraft_username%**."
 register_discord_desc: "To complete your registration you just have to react to this message. Once you accept, **%minecraft_username%** s account will be linked with this Discord user."

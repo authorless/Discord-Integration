@@ -1,4 +1,7 @@
 ##################### GLOBAL OPTIONS
+#Language: 'en' (default), 'es', or any code matching a lang_<code>.yml in the plugin folder.
+language: en
+
 #BungeeCord
 bungeecord: false
 

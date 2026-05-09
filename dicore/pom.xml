@@ -48,9 +48,19 @@
 			<version>1.28</version>
 		</dependency>
 		<dependency>
+			<groupId>org.bstats</groupId>
+			<artifactId>bstats-bukkit</artifactId>
+			<version>3.0.2</version>
+		</dependency>
+		<dependency>
+			<groupId>org.bstats</groupId>
+			<artifactId>bstats-bungeecord</artifactId>
+			<version>3.0.2</version>
+		</dependency>
+		<dependency>
 			<groupId>net.dv8tion</groupId>
 			<artifactId>JDA</artifactId>
-			<version>5.0.0-beta.22</version>
+			<version>5.0.2</version>
 			<scope>compile</scope>
 			<exclusions>
 				<exclusion>

@@ -9,6 +9,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import di.dicore.api.DIApi;
 import di.dicore.api.impl.DIApiBukkitImpl;
+import di.dilogin.controller.ConfigValidator;
 import di.dilogin.controller.DBController;
 import di.dilogin.controller.MainController;
 import di.dilogin.controller.impl.DILoginControllerBukkitImpl;
@@ -65,6 +66,11 @@ public class BukkitApplication extends JavaPlugin {
 		MainController.setDIApi(api);
 		MainController.setDILoginController(new DILoginControllerBukkitImpl());
 		MainController.setBukkit(true);
+
+		if (!ConfigValidator.validateAndLog(api, getLogger())) {
+			plugin.getPluginLoader().disablePlugin(plugin);
+			return;
+		}
 
 		if (!api.isBungeeDetected()) {
 			// If api is in own server.
@@ -215,6 +221,9 @@ public class BukkitApplication extends JavaPlugin {
 			api.registerDiscordSlashCommand(new DiscordRegisterBukkitCommand());
 			api.registerDiscordSlashCommand(new UserInfoDiscordCommand());
 			api.registerDiscordSlashCommand(new UserListDiscordCommand());
+			if (isPrejoinVerificationEnabled()) {
+				api.registerDiscordSlashCommand(new PrejoinConfirmDiscordCommand());
+			}
 		}
 	}
 

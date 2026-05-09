@@ -56,7 +56,7 @@ public class CoreControllerBukkitImpl implements PluginController, CoreControlle
 		this.classLoader = classLoader;
 		this.dataFolder = plugin.getDataFolder();
 		this.configManager = new ConfigManager(this, plugin.getDataFolder(), classLoader, isDataInBungee);
-		this.langManager = new YamlManager(this, "lang.yml", plugin.getDataFolder(), classLoader, configManager.getBoolean("bungeecord"));
+		this.langManager = new YamlManager(this, resolveLangFileName(configManager), plugin.getDataFolder(), classLoader, configManager.getBoolean("bungeecord"));
 		if (!configManager.getBoolean("bungeecord")) {
 			this.bot = initBot();
 		}
@@ -65,6 +65,22 @@ public class CoreControllerBukkitImpl implements PluginController, CoreControlle
 	@Override
 	public YamlManager getFile(String file) {
 		return new YamlManager(this, file + ".yml", dataFolder, classLoader, false);
+	}
+
+	private static String resolveLangFileName(ConfigManager cm) {
+		try {
+			if (cm != null && cm.contains("language")) {
+				String code = cm.getString("language");
+				if (code != null) {
+					code = code.replace("§", "").trim().toLowerCase();
+					if (!code.isEmpty() && !"en".equals(code))
+						return "lang_" + code + ".yml";
+				}
+			}
+		} catch (Exception ignored) {
+			// fallback
+		}
+		return "lang.yml";
 	}
 
 	@Override

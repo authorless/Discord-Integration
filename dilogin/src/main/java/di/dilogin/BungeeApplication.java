@@ -5,6 +5,7 @@ import java.util.logging.Level;
 
 import di.dicore.api.DIApi;
 import di.dicore.api.impl.DIApiBungeeImpl;
+import di.dilogin.controller.ConfigValidator;
 import di.dilogin.controller.DBController;
 import di.dilogin.controller.MainController;
 import di.dilogin.controller.impl.DILoginControllerBungeeImpl;
@@ -55,6 +56,12 @@ public class BungeeApplication extends Plugin {
 		MainController.setDILoginController(new DILoginControllerBungeeImpl());
 		MainController.setDiscordController(new DiscordControllerImpl());
 		MainController.setBukkit(true);
+
+		if (!ConfigValidator.validateAndLog(api, getLogger())) {
+			plugin.onDisable();
+			return;
+		}
+
 		DBController.getConnect();
 		initDiscordEvents();
 		initDiscordCommands();
@@ -156,6 +163,9 @@ public class BungeeApplication extends Plugin {
 			api.registerDiscordSlashCommand(new DiscordRegisterBungeeCommand());
 			api.registerDiscordSlashCommand(new UserInfoDiscordCommand());
 			api.registerDiscordSlashCommand(new UserListDiscordCommand());
+			if (isPrejoinVerificationEnabled()) {
+				api.registerDiscordSlashCommand(new PrejoinConfirmDiscordCommand());
+			}
 		}
 	}
 

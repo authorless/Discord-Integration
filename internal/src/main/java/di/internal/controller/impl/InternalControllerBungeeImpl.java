@@ -68,7 +68,7 @@ public class InternalControllerBungeeImpl implements PluginController, InternalC
 		if (configFile)
 			this.configManager = new ConfigManager(this, dataFolder, classLoader, false);
 		if (langFile)
-			this.langManager = new YamlManager(this, "lang.yml", dataFolder, classLoader, false);
+			this.langManager = new YamlManager(this, resolveLangFileName(this.configManager), dataFolder, classLoader, false);
 
 		this.channelController = new ChannelControllerBungeeImpl(plugin);
 	}
@@ -76,6 +76,27 @@ public class InternalControllerBungeeImpl implements PluginController, InternalC
 	@Override
 	public YamlManager getFile(String file) {
 		return new YamlManager(this, file + ".yml", dataFolder, classLoader, false);
+	}
+
+	/**
+	 * Resolve which lang file to load based on the optional {@code language}
+	 * config key. Falls back to {@code lang.yml}.
+	 */
+	private static String resolveLangFileName(ConfigManager cm) {
+		try {
+			if (cm != null && cm.contains("language")) {
+				String code = cm.getString("language");
+				if (code != null) {
+					code = code.replace("§", "").trim().toLowerCase();
+					if (!code.isEmpty() && !"en".equals(code)) {
+						return "lang_" + code + ".yml";
+					}
+				}
+			}
+		} catch (Exception ignored) {
+			// fallback
+		}
+		return "lang.yml";
 	}
 
 	/**

@@ -32,6 +32,16 @@ public class PrejoinVerificationBungeeListener implements Listener {
         if (PrejoinCache.consumeVerified(username))
             return;
 
+        String ip = event.getConnection().getAddress() != null
+                ? event.getConnection().getAddress().getAddress().getHostAddress()
+                : "unknown";
+        if (!PrejoinCache.tryAcquire(ip)) {
+            event.setCancelled(true);
+            event.setCancelReason(TextComponent.fromLegacyText(
+                    LangController.getString(username, "prejoin_rate_limited")));
+            return;
+        }
+
         long ttlMillis = ttlMinutes() * 60_000L;
         String code = CodeGenerator.getCode(8, api);
         PrejoinCache.addPendingRegister(code, username, ttlMillis);

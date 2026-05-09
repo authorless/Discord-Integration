@@ -1,0 +1,90 @@
+##DO NOT USE SPACES FOR SLASH COMMANDS
+#Register
+register_request: "&cPara registrarte, usa el comando &6%register_command% &cen nuestro servidor de Discord o aquí &6/register <usuario_discord> o <id_discord>"
+register_request_copy: "Copiar comando al portapapeles"
+register_already_exists: "Ya estás registrado."
+register_arguments: "Introduce el ID del usuario de Discord."
+register_success: "Esta cuenta se ha vinculado correctamente con %discriminated_discord_name%."
+register_kick_time: "Has tardado demasiado en registrarte."
+register_max_accounts: "Has alcanzado el límite de cuentas."
+register_code_not_found: "El código que has introducido no es válido."
+register_user_not_detected: "No he encontrado a ningún usuario con nombre/id %user_discord_id%."
+register_submit: "Te he enviado un mensaje en Discord. Léelo para terminar el registro."
+register_opt_request: "Para vincular esta cuenta con tu usuario de Discord, usa el comando %register_command% en nuestro servidor de Discord."
+
+register_discord_arguments: "Introduce el código de registro."
+
+#Prejoin verification flow
+prejoin_register_kick_message: "&eNo estás registrado.&r\n\nEnvía &6+confirm %code%&r al bot en Discord para completar el registro, luego reconecta.\n&7Código válido durante %ttl_min% minutos."
+prejoin_confirm_missing_code: "Uso: +confirm <código>"
+prejoin_confirm_invalid_code: "El código no es válido o ha caducado. Reconecta al servidor para obtener uno nuevo."
+prejoin_confirm_success: "Registro confirmado para %minecraft_username%. Ya puedes conectarte al servidor."
+prejoin_rate_limited: "&cDemasiados intentos de conexión.&r Espera un minuto antes de volver a intentarlo."
+register_discord_title: "Registro en %minecraft_servername%."
+register_discord_success: "Tu cuenta se ha vinculado correctamente con **%minecraft_username%**."
+register_discord_desc: "Para completar tu registro solo tienes que reaccionar a este mensaje. Al aceptar, la cuenta de **%minecraft_username%** se vinculará con este usuario de Discord."
+
+register_discord_slash_description: "Registrar usuario en el servidor de Minecraft"
+register_discord_slash_option_code_title: "Código"
+register_discord_slash_option_code_description: "Introduce el código recibido en el servidor de Minecraft"
+
+
+#Login
+login_request: "Inicia sesión desde el mensaje que te envié en Discord."
+login_success: "&c¡Sesión iniciada correctamente!"
+login_kick_time: "Has tardado demasiado en conectar."
+login_without_role_required: "No tienes el rol necesario para acceder al servidor."
+login_not_authorized: "Tu nombre de usuario ya está conectado en este servidor."
+login_user_not_discord: "Usuario registrado no presente en el servidor."
+
+login_discord_title: "Iniciar sesión en %minecraft_servername%."
+login_discord_desc: "Solicitud de conexión al servidor desde la cuenta de **%minecraft_username%**. ¿No eres tú? Repórtalo en nuestro servidor."
+login_discord_success: "El inicio de sesión de la cuenta de **%minecraft_username%** ha sido aprobado."
+
+
+#GlobalCommands
+no_player: "No se ha encontrado ningún usuario con el nick %nick%"
+user_not_registered: "El usuario %minecraft_username% no está registrado."
+
+
+#ForceLogin
+forcelogin_user_connected: "El usuario ya ha iniciado sesión."
+forcelogin_success: "La sesión de %minecraft_username% se ha iniciado."
+login_discord_forced: "Se ha forzado el inicio de sesión."
+
+
+#UserInfo
+userinfo_discord_no_argument: "No se ha proporcionado ningún argumento. Por favor proporciona un ID de usuario de Discord, una mención o un nombre de Minecraft válido."
+userinfo_discord_no_valid: "No se ha encontrado información del usuario. Asegúrate de que el ID de Discord, la mención o el nombre de Minecraft sean correctos."
+userinfo_discord_title: "Información del usuario"
+userinfo_discord_player_name: "Nombre del jugador"
+userinfo_discord_id: "ID de Discord"
+userinfo_discord_tag: "Mención"
+
+userinfo_discord_slash_description: "Obtener la información asociada al usuario"
+userinfo_discord_slash_option_minecraftname_title: "Nombre_jugador"
+userinfo_discord_slash_option_minecraftname_description: "Nombre de usuario en Minecraft"
+userinfo_discord_slash_option_discordid_title: "id_discord"
+userinfo_discord_slash_option_discordid_description: "ID de usuario de Discord"
+userinfo_discord_slash_option_mention_title: "mencion"
+userinfo_discord_slash_option_mention_description: "Mención del usuario (formato @usuario)"
+
+
+#UserList
+userlist_discord_title: "Lista de usuarios"
+userlist_discord_description: "Total de usuarios %totalusers%"
+userlist_discord_users_label: "Usuarios"
+userlist_discord_footer: "Página %page%/%total%"
+
+userlist_discord_slash_description: "Lista de usuarios registrados"
+userlist_discord_slash_option_page_title: "Página"
+userlist_discord_slash_option_page_description: "Valor de la página"
+
+
+#Unregister
+unregister_kick: "Tu cuenta ha sido eliminada del registro."
+unregister_success: "La cuenta de %minecraft_username% ha sido eliminada."
+
+
+#Authme
+register_without_authentication: "Para registrarte con una cuenta existente, primero debes iniciar sesión."

@@ -39,6 +39,13 @@ public class PrejoinVerificationListener implements Listener {
             return;
         }
 
+        String ip = event.getAddress() != null ? event.getAddress().getHostAddress() : "unknown";
+        if (!PrejoinCache.tryAcquire(ip)) {
+            event.disallow(AsyncPlayerPreLoginEvent.Result.KICK_OTHER,
+                    LangController.getString(username, "prejoin_rate_limited"));
+            return;
+        }
+
         long ttlMillis = ttlMinutes() * 60_000L;
         String code = CodeGenerator.getCode(8, api);
         PrejoinCache.addPendingRegister(code, username, ttlMillis);

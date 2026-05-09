@@ -28,8 +28,40 @@ public class PrejoinCache {
      */
     private static final Map<String, Long> verifiedPlayers = new ConcurrentHashMap<>();
 
+    /**
+     * Per-IP rate-limit window: ip -> {count, windowStartMillis}.
+     * Prevents an attacker from spamming join attempts to fill the cache.
+     */
+    private static final Map<String, RateWindow> rateLimits = new ConcurrentHashMap<>();
+
+    /**
+     * Hard cap on total pending entries — if exceeded, new requests are rejected
+     * regardless of IP throttle. Defends against distributed attempts.
+     */
+    private static final int MAX_PENDING_ENTRIES = 1000;
+    private static final long RATE_WINDOW_MILLIS = 60_000L;
+    private static final int RATE_MAX_PER_WINDOW = 5;
+
     public static void addPendingRegister(String code, String playerName, long ttlMillis) {
         pendingRegisters.put(code, new PendingRegister(playerName, System.currentTimeMillis() + ttlMillis));
+    }
+
+    /**
+     * Check whether a new prejoin attempt from {@code ip} should be allowed.
+     * Returns {@code false} if the IP exceeded {@value RATE_MAX_PER_WINDOW}
+     * attempts in the last {@value RATE_WINDOW_MILLIS}ms or if the global
+     * pending cap is exceeded.
+     */
+    public static boolean tryAcquire(String ip) {
+        if (pendingRegisters.size() >= MAX_PENDING_ENTRIES)
+            return false;
+        long now = System.currentTimeMillis();
+        RateWindow current = rateLimits.compute(ip, (k, w) -> {
+            if (w == null || now - w.windowStart > RATE_WINDOW_MILLIS)
+                return new RateWindow(now, 1);
+            return new RateWindow(w.windowStart, w.count + 1);
+        });
+        return current.count <= RATE_MAX_PER_WINDOW;
     }
 
     public static Optional<PendingRegister> consumePendingRegister(String code) {
@@ -62,6 +94,7 @@ public class PrejoinCache {
         long now = System.currentTimeMillis();
         pendingRegisters.entrySet().removeIf(e -> e.getValue().expiry < now);
         verifiedPlayers.entrySet().removeIf(e -> e.getValue() < now);
+        rateLimits.entrySet().removeIf(e -> now - e.getValue().windowStart > RATE_WINDOW_MILLIS);
     }
 
     public static class PendingRegister {
@@ -71,6 +104,16 @@ public class PrejoinCache {
         PendingRegister(String playerName, long expiry) {
             this.playerName = playerName;
             this.expiry = expiry;
+        }
+    }
+
+    private static final class RateWindow {
+        final long windowStart;
+        final int count;
+
+        RateWindow(long windowStart, int count) {
+            this.windowStart = windowStart;
+            this.count = count;
         }
     }
 }
