@@ -18,6 +18,18 @@ status_content: 'There are %minecraft_players% players'
 #1 -> Updates when a player connects/disconnects
 #2 -> Updates every 5 minutes
 
+#Activity kind shown next to the bot name:
+#PLAYING (default), WATCHING, LISTENING, COMPETING, STREAMING (requires status_streaming_url)
+status_activity_type: PLAYING
+#Only used when status_activity_type is STREAMING. Must be twitch.tv or youtube.com URL.
+status_streaming_url: 'https://twitch.tv/'
+
+#Available placeholders for status_content:
+#  %minecraft_players%      online player count
+#  %minecraft_max_players%  configured player limit
+#  %minecraft_motd%         server MOTD (Bukkit only)
+#  %server_name%            value from server_name above
+
 #When true, the server (or proxy) is shut down if DICore cannot start because the config is invalid.
 #Useful for production: avoids running with broken Discord auth without anyone noticing.
 shutdown_server_on_critical_failure: true

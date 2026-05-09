@@ -2,7 +2,6 @@ package di.dicore.event;
 
 import di.dicore.BungeeApplication;
 import di.internal.controller.CoreController;
-import net.dv8tion.jda.api.entities.Activity;
 import net.md_5.bungee.api.event.PostLoginEvent;
 import net.md_5.bungee.api.plugin.Listener;
 import net.md_5.bungee.api.plugin.Plugin;
@@ -87,16 +86,10 @@ public class BotStatusBungeeEvent implements Listener {
      * Fire the status of the bot.
      */
     private static void fire() {
-        controller.getBot().getApi().get().getPresence().setActivity(Activity.playing(getContent()));
-    }
-
-    /**
-     * Get the content of the status.
-     *
-     * @return The content of the status.
-     */
-    private static String getContent() {
-        return content.replace("%minecraft_players%", String.valueOf(getOnlinePlayersCount()));
+        String rendered = BotActivityBuilder.render(controller, content,
+                getOnlinePlayersCount(), plugin.getProxy().getOnlineCount(), null);
+        controller.getBot().getApi().get().getPresence()
+                .setActivity(BotActivityBuilder.build(controller, rendered));
     }
 
     private static int getOnlinePlayersCount() {

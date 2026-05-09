@@ -11,7 +11,7 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 
 import di.internal.controller.CoreController;
-import net.dv8tion.jda.api.entities.Activity;
+import org.bukkit.Bukkit;
 import org.bukkit.plugin.Plugin;
 
 /**
@@ -98,16 +98,17 @@ public class BotStatusBukkitEvent implements Listener {
      * Fire the status of the bot.
      */
     private static void fire() {
-        controller.getBot().getApi().get().getPresence().setActivity(Activity.playing(getContent()));
+        String rendered = BotActivityBuilder.render(controller, content,
+                plugin.getServer().getOnlinePlayers().size(),
+                plugin.getServer().getMaxPlayers(),
+                stripColors(Bukkit.getMotd()));
+        controller.getBot().getApi().get().getPresence()
+                .setActivity(BotActivityBuilder.build(controller, rendered));
     }
 
-    /**
-     * Get the content of the status.
-     *
-     * @return The content of the status.
-     */
-    private static String getContent() {
-        return content.replace("%minecraft_players%", String.valueOf(plugin.getServer().getOnlinePlayers().size()));
+    private static String stripColors(String input) {
+        if (input == null) return null;
+        return input.replaceAll("§[0-9a-fk-or]", "");
     }
 
 }

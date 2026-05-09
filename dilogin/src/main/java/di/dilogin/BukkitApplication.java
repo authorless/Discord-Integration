@@ -43,6 +43,7 @@ import di.dilogin.minecraft.cache.PrejoinCache;
 import di.dilogin.minecraft.cache.TmpCache;
 import di.dilogin.minecraft.ext.authme.AuthmeEvents;
 import di.dilogin.minecraft.ext.authme.UserLoginEventAuthmeImpl;
+import di.dilogin.minecraft.ext.fastlogin.FastLoginHook;
 import di.dilogin.minecraft.ext.luckperms.GuildMemberRoleEvent;
 import di.dilogin.minecraft.ext.luckperms.LuckPermsEvents;
 import di.dilogin.minecraft.ext.luckperms.LuckPermsLoginBukkitEvent;
@@ -92,6 +93,7 @@ public class BukkitApplication extends JavaPlugin {
 				plugin.getPluginLoader().disablePlugin(plugin);
 				return;
 			}
+			logFastLoginStatus();
 			initInternCommands();
 			initInternEvents();
 			initDiscordEvents();
@@ -188,6 +190,18 @@ public class BukkitApplication extends JavaPlugin {
 	private void schedulePrejoinPurge() {
 		long ticks = 20L * 60L * 5L; // 5 minutes
 		getServer().getScheduler().runTaskTimerAsynchronously(plugin, PrejoinCache::purgeExpired, ticks, ticks);
+	}
+
+	private void logFastLoginStatus() {
+		boolean installed = FastLoginHook.isInstalled();
+		boolean bypass = FastLoginHook.isBypassEnabled();
+		if (installed && bypass) {
+			getLogger().info("FastLogin detected — premium bypass is active. Verified premium players will skip the Discord verification flow.");
+		} else if (installed) {
+			getLogger().info("FastLogin detected. Set bypass_premium_login: true in config.yml to skip Discord verification for premium players.");
+		} else if (bypass) {
+			getLogger().warning("bypass_premium_login is true but FastLogin is not installed — the option is ignored to prevent name spoofing.");
+		}
 	}
 
 	private boolean checkSchemaCompatibility() {
