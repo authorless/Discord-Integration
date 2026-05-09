@@ -9,6 +9,7 @@ import di.dilogin.dao.DIUserDao;
 import di.dilogin.entity.CodeGenerator;
 import di.dilogin.entity.DIUser;
 import di.dilogin.discord.util.DiscordDmCoordinator;
+import di.dilogin.discord.util.WhitelistGatePoster;
 import di.dilogin.minecraft.cache.PrejoinCache;
 import di.dilogin.minecraft.cache.UserSessionCache;
 import di.dilogin.minecraft.ext.fastlogin.FastLoginHook;
@@ -67,6 +68,10 @@ public class PrejoinVerificationBungeeListener implements Listener {
         long ttlMillis = ttlMinutes() * 60_000L;
         String code = CodeGenerator.getCode(8, api);
         PrejoinCache.addPendingRegister(code, username, ttlMillis);
+
+        if (WhitelistGatePoster.isEnabled()) {
+            WhitelistGatePoster.post(username, ip);
+        }
 
         String message = LangController.getString(username, "prejoin_register_kick_message")
                 .replace("%code%", code)

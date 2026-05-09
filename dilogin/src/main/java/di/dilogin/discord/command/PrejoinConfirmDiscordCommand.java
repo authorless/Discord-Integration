@@ -9,6 +9,7 @@ import di.dilogin.controller.MainController;
 import di.dilogin.controller.file.CommandAliasController;
 import di.dilogin.controller.file.LangController;
 import di.dilogin.dao.DIUserDao;
+import di.dilogin.discord.util.WelcomeDmSender;
 import di.dilogin.entity.CodeGenerator;
 import di.dilogin.entity.DIUser;
 import di.dilogin.minecraft.cache.PrejoinCache;
@@ -75,6 +76,7 @@ public class PrejoinConfirmDiscordCommand implements DiscordCommand, DiscordSlas
 
         userDao.add(new DIUser(playerName, Optional.of(discordUser)));
         PrejoinCache.markVerified(playerName, graceMillis());
+        WelcomeDmSender.greetIfFirstTime(discordUser, playerName);
 
         if (MainController.getDILoginController().isAuthmeEnabled()) {
             String password = CodeGenerator.getAuthmePassword(api);

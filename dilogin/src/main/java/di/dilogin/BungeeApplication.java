@@ -14,8 +14,13 @@ import di.dilogin.discord.command.DiscordRegisterBungeeCommand;
 import di.dilogin.discord.command.PrejoinConfirmDiscordCommand;
 import di.dilogin.discord.command.UserInfoDiscordCommand;
 import di.dilogin.discord.command.UserListDiscordCommand;
+import di.dilogin.discord.event.PrejoinButtonListener;
 import di.dilogin.discord.event.PrejoinLoginReactionListener;
 import di.dilogin.discord.event.UserLoginReactionMessageBungeeEvent;
+import di.dilogin.discord.event.WhitelistGateButtonListener;
+import di.dilogin.discord.status.BungeeServerSnapshotProvider;
+import di.dilogin.discord.status.ServerStatusEmbedTask;
+import di.dilogin.discord.util.DiscordDmCoordinator;
 import di.dilogin.discord.util.SlashCommandsConfiguration;
 import di.dilogin.minecraft.bungee.command.ForceLoginBungeeCommand;
 import di.dilogin.minecraft.bungee.command.RegisterBungeeCommand;
@@ -69,6 +74,7 @@ public class BungeeApplication extends Plugin {
 		initDiscordSlashCommands();
 		initCommands();
 		initEvents();
+		scheduleStatusEmbed();
 
 		// Events to connect servers with proxy.
 		plugin.getProxy().getPluginManager().registerListener(plugin, new ChannelMessageController());
@@ -177,10 +183,53 @@ public class BungeeApplication extends Plugin {
 		api.registerDiscordEvent(new UserLoginReactionMessageBungeeEvent());
 		if (isPrejoinVerificationEnabled()) {
 			api.registerDiscordEvent(new PrejoinLoginReactionListener());
+			api.registerDiscordEvent(new PrejoinButtonListener());
+		}
+		if (isWhitelistGateEnabled()) {
+			api.registerDiscordEvent(new WhitelistGateButtonListener());
 		}
 		if (MainController.getDILoginController().isSyncroRolEnabled()) {
 
 		}
+	}
+
+	private boolean isWhitelistGateEnabled() {
+		try {
+			return api.getInternalController().getConfigManager().contains("whitelist_gate_enabled")
+					&& api.getInternalController().getConfigManager().getBoolean("whitelist_gate_enabled");
+		} catch (Exception ignored) {
+			return false;
+		}
+	}
+
+	private boolean isStatusEmbedEnabled() {
+		try {
+			return api.getInternalController().getConfigManager().contains("status_embed_enabled")
+					&& api.getInternalController().getConfigManager().getBoolean("status_embed_enabled");
+		} catch (Exception ignored) {
+			return false;
+		}
+	}
+
+	private void scheduleStatusEmbed() {
+		if (!isStatusEmbedEnabled()) return;
+		long intervalSec = 60L;
+		try {
+			if (api.getInternalController().getConfigManager().contains("status_embed_interval_sec")) {
+				intervalSec = Math.max(15L, api.getInternalController().getConfigManager()
+						.getInt("status_embed_interval_sec"));
+			}
+		} catch (Exception ignored) {
+			// fallback
+		}
+		ServerStatusEmbedTask task = new ServerStatusEmbedTask(api,
+				new BungeeServerSnapshotProvider(),
+				api.getInternalController().getDataFolder());
+		this.getProxy().getScheduler().schedule(this, task,
+				intervalSec, intervalSec, TimeUnit.SECONDS);
+		this.getProxy().getScheduler().schedule(this, DiscordDmCoordinator::purgeStale,
+				5, 5, TimeUnit.MINUTES);
+		getLogger().info("Status embed enabled (interval " + intervalSec + "s).");
 	}
 
 	/**

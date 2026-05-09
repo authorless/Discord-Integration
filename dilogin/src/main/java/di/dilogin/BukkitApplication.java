@@ -18,8 +18,13 @@ import di.dilogin.discord.command.DiscordRegisterBukkitCommand;
 import di.dilogin.discord.command.PrejoinConfirmDiscordCommand;
 import di.dilogin.discord.command.UserInfoDiscordCommand;
 import di.dilogin.discord.command.UserListDiscordCommand;
+import di.dilogin.discord.event.PrejoinButtonListener;
 import di.dilogin.discord.event.PrejoinLoginReactionListener;
 import di.dilogin.discord.event.UserLoginReactionMessageBukkitEvent;
+import di.dilogin.discord.event.WhitelistGateButtonListener;
+import di.dilogin.discord.status.BukkitServerSnapshotProvider;
+import di.dilogin.discord.status.ServerStatusEmbedTask;
+import di.dilogin.discord.util.DiscordDmCoordinator;
 import di.dilogin.discord.util.SlashCommandsConfiguration;
 import di.dilogin.minecraft.bukkit.command.ForceLoginBukkitCommand;
 import di.dilogin.minecraft.bukkit.command.RegisterBukkitCommand;
@@ -83,6 +88,7 @@ public class BukkitApplication extends JavaPlugin {
 			initDiscordEvents();
 			initDiscordCommands();
 			initDiscordSlashCommands();
+			scheduleStatusEmbed();
 		} else {
 			// If api is in proxy.
 			initExtEvents();
@@ -199,10 +205,53 @@ public class BukkitApplication extends JavaPlugin {
 		api.registerDiscordEvent(new UserLoginReactionMessageBukkitEvent());
 		if (isPrejoinVerificationEnabled()) {
 			api.registerDiscordEvent(new PrejoinLoginReactionListener());
+			api.registerDiscordEvent(new PrejoinButtonListener());
+		}
+		if (isWhitelistGateEnabled()) {
+			api.registerDiscordEvent(new WhitelistGateButtonListener());
 		}
 		if (MainController.getDILoginController().isSyncroRolEnabled()) {
 			api.registerDiscordEvent(new GuildMemberRoleEvent());
 		}
+	}
+
+	private boolean isWhitelistGateEnabled() {
+		try {
+			return api.getInternalController().getConfigManager().contains("whitelist_gate_enabled")
+					&& api.getInternalController().getConfigManager().getBoolean("whitelist_gate_enabled");
+		} catch (Exception ignored) {
+			return false;
+		}
+	}
+
+	private boolean isStatusEmbedEnabled() {
+		try {
+			return api.getInternalController().getConfigManager().contains("status_embed_enabled")
+					&& api.getInternalController().getConfigManager().getBoolean("status_embed_enabled");
+		} catch (Exception ignored) {
+			return false;
+		}
+	}
+
+	private void scheduleStatusEmbed() {
+		if (!isStatusEmbedEnabled()) return;
+		long intervalSec = 60L;
+		try {
+			if (api.getInternalController().getConfigManager().contains("status_embed_interval_sec")) {
+				intervalSec = Math.max(15L, api.getInternalController().getConfigManager()
+						.getInt("status_embed_interval_sec"));
+			}
+		} catch (Exception ignored) {
+			// fallback
+		}
+		ServerStatusEmbedTask task = new ServerStatusEmbedTask(api,
+				new BukkitServerSnapshotProvider(),
+				api.getInternalController().getDataFolder());
+		long ticks = intervalSec * 20L;
+		getServer().getScheduler().runTaskTimerAsynchronously(plugin, task, ticks, ticks);
+		getServer().getScheduler().runTaskTimerAsynchronously(plugin,
+				DiscordDmCoordinator::purgeStale, 20L * 60L * 5L, 20L * 60L * 5L);
+		getLogger().info("Status embed enabled (interval " + intervalSec + "s).");
 	}
 
 	/**

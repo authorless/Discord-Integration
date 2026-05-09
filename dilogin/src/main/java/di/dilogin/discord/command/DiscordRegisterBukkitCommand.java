@@ -13,6 +13,7 @@ import di.dilogin.controller.file.CommandAliasController;
 import di.dilogin.controller.file.LangController;
 import di.dilogin.dao.DIUserDao;
 import di.dilogin.discord.util.DiscordMessageDeleter;
+import di.dilogin.discord.util.WelcomeDmSender;
 import di.dilogin.entity.CodeGenerator;
 import di.dilogin.entity.DIUser;
 import di.dilogin.entity.TmpMessage;
@@ -82,6 +83,7 @@ public class DiscordRegisterBukkitCommand implements DiscordCommand, DiscordSlas
         sendTempEmbedMessage(event, getEmbedMessage(player, discordUser));
         TmpCache.removeRegister(player.getName());
         userDao.add(new DIUser(player.getName(), Optional.of(discordUser)));
+        WelcomeDmSender.greetIfFirstTime(discordUser, player.getName());
 
         if (MainController.getDILoginController().isRegisterGiveRoleEnabled()) {
             giveRolesToUser(event instanceof MessageReceivedEvent ? ((MessageReceivedEvent) event).getMember() : null, player.getName());

@@ -27,6 +27,31 @@ prejoin_login_dm_title: "Login request for %minecraft_servername%"
 prejoin_login_dm_desc: "**%minecraft_username%** is trying to connect. React to this message to allow the login. If it wasn't you, ignore it and report it to staff."
 prejoin_login_dm_confirmed: "Login approved. Reconnect to the server now."
 prejoin_authme_password_dm: "Your AuthMe password for **%minecraft_username%** is `%authme_password%`. Reconnect within the grace window to activate it."
+prejoin_login_dm_button_approve: "Approve"
+prejoin_login_dm_button_deny: "Deny"
+prejoin_login_dm_expired: "This login request has expired. Reconnect to the server to get a new one."
+prejoin_login_dm_not_owner: "Only the linked account can approve this login."
+prejoin_login_dm_denied: "Login denied. If this wasn't you, change your Discord password."
+
+#Welcome DM
+welcome_dm_title: "Welcome to %minecraft_servername%!"
+welcome_dm_body: "Hi **%minecraft_username%**, your account is linked.\n\nTake a look at the rules channel and have fun!"
+
+#Status embed
+status_embed_title: "%minecraft_servername% — live status"
+status_embed_players_field: "Players"
+status_embed_tps_field: "TPS"
+status_embed_uptime_field: "Uptime"
+status_embed_online_list_field: "Online"
+
+#Whitelist gate
+whitelist_gate_embed_title: "Whitelist gate request"
+whitelist_gate_embed_desc: "Player **%minecraft_username%** (IP `%ip%`) tried to join. Approve to whitelist them; deny to ignore."
+whitelist_gate_button_approve: "Approve"
+whitelist_gate_button_deny: "Deny"
+whitelist_gate_no_permission: "You do not have the role required to approve gate requests."
+whitelist_gate_approved: "%admin% approved **%minecraft_username%**. They can now connect."
+whitelist_gate_denied: "%admin% denied the request for %minecraft_username%."
 register_discord_title: "Register in %minecraft_servername%."
 register_discord_success: "Your account has been successfully linked with **%minecraft_username%**."
 register_discord_desc: "To complete your registration you just have to react to this message. Once you accept, **%minecraft_username%** s account will be linked with this Discord user."

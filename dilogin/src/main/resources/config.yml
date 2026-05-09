@@ -27,6 +27,20 @@ prejoin_verification_grace_sec: 60 #Seconds the player has to actually reconnect
 #register/login flow entirely. Requires FastLogin (https://www.spigotmc.org/resources/fastlogin.14153/) to do the
 #protocol-level Mojang auth — without it the option is ignored to prevent name spoofing in offline-mode servers.
 bypass_premium_login: false
+
+#Welcome DM: send a one-time onboarding DM the first time a player completes registration.
+welcome_dm_enabled: false
+
+#Auto-updating server status embed: posts a single message in a channel and edits it every N seconds.
+status_embed_enabled: false
+status_embed_channel: 0
+status_embed_interval_sec: 60
+
+#Whitelist gate: when an unregistered player attempts to join, post an embed with Approve/Deny buttons in
+#the configured admin channel. Admins click Approve to register the player without them needing a code.
+whitelist_gate_enabled: false
+whitelist_gate_channel: 0
+whitelist_gate_admin_role: 0 #Discord role id allowed to approve. 0 = anyone with MANAGE_SERVER.
 login_time_until_kick: 30
 login_system_enabled: true #If false, login system will not work. U can use /register command as /link command.
 register_optional_enabled: false #If true, user decide if they want register.

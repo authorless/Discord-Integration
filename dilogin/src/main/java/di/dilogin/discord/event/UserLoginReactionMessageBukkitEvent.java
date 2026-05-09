@@ -14,6 +14,7 @@ import di.dilogin.dao.DIUserDao;
 import di.dilogin.entity.CodeGenerator;
 import di.dilogin.entity.DIUser;
 import di.dilogin.entity.TmpMessage;
+import di.dilogin.discord.util.WelcomeDmSender;
 import di.dilogin.minecraft.cache.TmpCache;
 import di.dilogin.minecraft.ext.authme.AuthmeHook;
 import net.dv8tion.jda.api.entities.Member;
@@ -90,6 +91,7 @@ public class UserLoginReactionMessageBukkitEvent extends ListenerAdapter {
         message.editMessageEmbeds(getRegisterEmbed(user, player)).delay(Duration.ofSeconds(60)).flatMap(Message::delete)
                 .queue();
         userDao.add(new DIUser(player.getName(), Optional.of(user)));
+        WelcomeDmSender.greetIfFirstTime(user, player.getName());
 
         if (MainController.getDILoginController().isAuthmeEnabled()) {
             AuthmeHook.register(player, password);
