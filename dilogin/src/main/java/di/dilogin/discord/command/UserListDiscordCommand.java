@@ -82,7 +82,7 @@ public class UserListDiscordCommand implements DiscordCommand, DiscordSlashComma
                 .setColor(EMBED_COLOR)
                 .setTitle(title)
                 .setDescription(description)
-                .addField("Users", userListString.toString(), false)
+                .addField(LangController.getString("userlist_discord_users_label"), userListString.toString(), false)
                 .setFooter(footer);
 
         MessageEmbed messageEmbed = embedBuilder.build();

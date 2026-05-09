@@ -66,6 +66,7 @@ userinfo_discord_slash_option_mention_description: "User mention (@user format)"
 #UserList
 userlist_discord_title: "User list"
 userlist_discord_description: "Total users %totalusers%"
+userlist_discord_users_label: "Users"
 userlist_discord_footer: "Page %page%/%total%"
 
 userlist_discord_slash_description: "User registered list"
