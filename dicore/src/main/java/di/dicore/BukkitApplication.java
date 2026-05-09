@@ -6,6 +6,7 @@ import java.util.concurrent.TimeUnit;
 import di.dicore.event.BotStatusBukkitEvent;
 import di.internal.controller.impl.CoreControllerBukkitImpl;
 import net.dv8tion.jda.api.JDA;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -29,6 +30,12 @@ public class BukkitApplication extends JavaPlugin {
     /**
      * Runs when the plugin is being powered on.
      */
+    /**
+     * bStats plugin id. Replace with the real id from https://bstats.org/getting-started
+     * once the plugin is registered.
+     */
+    private static final int BSTATS_PLUGIN_ID = 0;
+
     @Override
     public void onEnable() {
         plugin = getPlugin(getClass());
@@ -36,7 +43,18 @@ public class BukkitApplication extends JavaPlugin {
         if (!isBungeeDetected()) {
             BotStatusBukkitEvent.init(plugin);
         }
+        initMetrics();
         getLogger().info("Plugin started");
+    }
+
+    private void initMetrics() {
+        if (BSTATS_PLUGIN_ID <= 0)
+            return;
+        try {
+            new Metrics(this, BSTATS_PLUGIN_ID);
+        } catch (Exception e) {
+            getLogger().warning("Failed to start bStats metrics: " + e.getMessage());
+        }
     }
 
     /**

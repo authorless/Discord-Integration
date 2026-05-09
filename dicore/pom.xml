@@ -113,6 +113,10 @@
 									<pattern>com.neovisionaries.ws</pattern>
 									<shadedPattern>di.shaded.neovisionaries.ws</shadedPattern>
 								</relocation>
+								<relocation>
+									<pattern>org.bstats</pattern>
+									<shadedPattern>di.shaded.bstats</shadedPattern>
+								</relocation>
 							</relocations>
 							<transformers>
 								<transformer
@@ -140,6 +144,10 @@
 								<relocation>
 									<pattern>com.neovisionaries.ws</pattern>
 									<shadedPattern>di.shaded.neovisionaries.ws</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>org.bstats</pattern>
+									<shadedPattern>di.shaded.bstats</shadedPattern>
 								</relocation>
 							</relocations>
 							<filters>
