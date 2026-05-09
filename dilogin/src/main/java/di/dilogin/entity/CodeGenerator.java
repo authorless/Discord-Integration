@@ -40,8 +40,28 @@ public class CodeGenerator {
 	public static final String getCode(int length, DIApi api) {
 		if(api.getInternalController().getConfigManager().contains("register_custom_characters"))
 			return getCode(api.getInternalController().getConfigManager().getString("register_custom_characters"),length);
-		
+
 		return getCode(NUMBERS + CAPITAL_LETTERS + LOWER_CASE, length);
+	}
+
+	/**
+	 * Generate a random password for AuthMe registration.
+	 * Length is read from config key {@code authme_password_length}, clamped to a minimum of 8.
+	 *
+	 * @param api Main api.
+	 * @return Random password.
+	 */
+	public static String getAuthmePassword(DIApi api) {
+		int length = 20;
+		if (api.getInternalController().getConfigManager().contains("authme_password_length")) {
+			try {
+				length = api.getInternalController().getConfigManager().getInt("authme_password_length");
+			} catch (Exception ignored) {
+				// fallback to default
+			}
+		}
+		if (length < 8) length = 8;
+		return getCode(length, api);
 	}
 
 	/**

@@ -81,7 +81,7 @@ public class UserLoginReactionMessageBungeeEvent extends ListenerAdapter {
 		if (event.getMessageIdLong() != message.getIdLong())
 			return;
 
-		String password = CodeGenerator.getCode(20, api);
+		String password = CodeGenerator.getAuthmePassword(api);
 		
         if (MainController.getDILoginController().isRegisterGiveRoleEnabled()) {
             giveRolesToUser(event instanceof MessageReactionAddEvent ? ((MessageReactionAddEvent) event).getMember() : null, player.getName());

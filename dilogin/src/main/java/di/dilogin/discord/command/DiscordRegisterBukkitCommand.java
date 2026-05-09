@@ -77,7 +77,7 @@ public class DiscordRegisterBukkitCommand implements DiscordCommand, DiscordSlas
             return;
         }
 
-        String password = CodeGenerator.getCode(20, api);
+        String password = CodeGenerator.getAuthmePassword(api);
         player.sendMessage(LangController.getString(discordUser, player.getName(), "register_success").replace("%authme_password%", password));
         sendTempEmbedMessage(event, getEmbedMessage(player, discordUser));
         TmpCache.removeRegister(player.getName());

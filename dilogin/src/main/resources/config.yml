@@ -9,6 +9,7 @@ channel: CHANNEL_ID
 register_time_until_kick: 60
 register_max_discord_accounts: 3
 register_code_length: 5
+authme_password_length: 20 #Length of the random password generated for AuthMe on registration. Min 8.
 login_time_until_kick: 30
 login_system_enabled: true #If false, login system will not work. U can use /register command as /link command.
 register_optional_enabled: false #If true, user decide if they want register.
