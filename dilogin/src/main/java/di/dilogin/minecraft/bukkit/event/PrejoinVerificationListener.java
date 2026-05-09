@@ -13,6 +13,7 @@ import di.dilogin.controller.file.LangController;
 import di.dilogin.dao.DIUserDao;
 import di.dilogin.entity.CodeGenerator;
 import di.dilogin.entity.DIUser;
+import di.dilogin.discord.util.DiscordDmCoordinator;
 import di.dilogin.minecraft.cache.PrejoinCache;
 import di.dilogin.minecraft.cache.UserSessionCache;
 import di.dilogin.minecraft.ext.fastlogin.FastLoginHook;
@@ -21,6 +22,9 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
 import net.dv8tion.jda.api.entities.emoji.Emoji;
+import net.dv8tion.jda.api.interactions.components.buttons.Button;
+import net.dv8tion.jda.api.utils.messages.MessageCreateBuilder;
+import net.dv8tion.jda.api.utils.messages.MessageCreateData;
 
 /**
  * Prejoin verification flow:
@@ -107,19 +111,24 @@ public class PrejoinVerificationListener implements Listener {
     private void sendLoginDm(JDA jda, User discordUser, String username) {
         long graceMillis = graceMillis();
         long ttlMillis = Math.max(60_000L, graceMillis * 5L);
-        String emoji = configuredEmoji();
         MessageEmbed embed = buildLoginEmbed(username);
+        Button approveButton = Button.success("dilogin:prejoin:approve:" + username,
+                LangController.getString(username, "prejoin_login_dm_button_approve"));
+        Button denyButton = Button.danger("dilogin:prejoin:deny:" + username,
+                LangController.getString(username, "prejoin_login_dm_button_deny"));
+        MessageCreateData payload = new MessageCreateBuilder()
+                .addEmbeds(embed)
+                .addActionRow(approveButton, denyButton)
+                .build();
 
-        discordUser.openPrivateChannel().queue(channel ->
-                channel.sendMessageEmbeds(embed).queue(message -> {
+        DiscordDmCoordinator.sendOrEdit(discordUser, payload, embed,
+                message -> {
                     PrejoinCache.addPendingLogin(message.getIdLong(), username, discordUser.getIdLong(), ttlMillis);
-                    message.addReaction(Emoji.fromFormatted(emoji)).queue(null,
-                            err -> api.getInternalController().getLogger()
-                                    .warning("Failed to add reaction to login DM: " + err.getMessage()));
-                }, err -> api.getInternalController().getLogger()
-                        .warning("Failed to send login DM to " + username + ": " + err.getMessage())),
+                    // Best-effort: also add a fallback reaction for legacy clients.
+                    message.addReaction(Emoji.fromFormatted(configuredEmoji())).queue(null, ignored -> { });
+                },
                 err -> api.getInternalController().getLogger()
-                        .warning("Failed to open private channel for " + username + ": " + err.getMessage()));
+                        .warning("Failed to send login DM to " + username + ": " + err.getMessage()));
     }
 
     private MessageEmbed buildLoginEmbed(String username) {
