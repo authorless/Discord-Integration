@@ -83,7 +83,7 @@
 				</configuration>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-shade-plugin</artifactId>
-				<version>3.2.4</version>
+				<version>3.6.0</version>
 				<executions>
 					<execution>
 						<phase>package</phase>
@@ -91,6 +91,19 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
+							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<shadedClassifierName>shaded</shadedClassifierName>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<relocations>
+								<relocation>
+									<pattern>net.dv8tion.jda</pattern>
+									<shadedPattern>di.shaded.jda</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.neovisionaries.ws</pattern>
+									<shadedPattern>di.shaded.neovisionaries.ws</shadedPattern>
+								</relocation>
+							</relocations>
 							<transformers>
 								<transformer
 									implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
@@ -106,6 +119,19 @@
 							<goal>shade</goal>
 						</goals>
 						<configuration>
+							<shadedArtifactAttached>true</shadedArtifactAttached>
+							<shadedClassifierName>noslf4j</shadedClassifierName>
+							<createDependencyReducedPom>false</createDependencyReducedPom>
+							<relocations>
+								<relocation>
+									<pattern>net.dv8tion.jda</pattern>
+									<shadedPattern>di.shaded.jda</shadedPattern>
+								</relocation>
+								<relocation>
+									<pattern>com.neovisionaries.ws</pattern>
+									<shadedPattern>di.shaded.neovisionaries.ws</shadedPattern>
+								</relocation>
+							</relocations>
 							<filters>
 								<filter>
 									<artifact>*:*</artifact>
@@ -120,8 +146,6 @@
 									<mainClass>di.dicore.BukkitApplication</mainClass>
 								</transformer>
 							</transformers>
-							<finalName>
-								${project.artifactId}-${project.version}-noslf4j</finalName>
 						</configuration>
 					</execution>
 				</executions>
