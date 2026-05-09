@@ -56,10 +56,12 @@ public class DBConnectionSqliteImpl implements DBConnection {
 
             HikariConfig config = new HikariConfig();
             config.setJdbcUrl("jdbc:sqlite:" + dataFolder.getAbsolutePath());
-            config.setMaximumPoolSize(1); // SQLite: single writer
+            // WAL allows concurrent readers; writers still serialise but the pool can serve reads in parallel.
+            config.setMaximumPoolSize(4);
             config.setMinimumIdle(1);
             config.setConnectionTimeout(10_000);
             config.setPoolName("DILogin-SQLite");
+            config.setConnectionInitSql("PRAGMA journal_mode=WAL;");
 
             dataSource = new HikariDataSource(config);
             initTables();

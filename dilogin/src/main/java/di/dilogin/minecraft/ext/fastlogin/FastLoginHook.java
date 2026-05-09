@@ -139,10 +139,23 @@ public final class FastLoginHook {
     }
 
     /**
-     * Convenience: bypass enabled, FastLogin installed, and player is verified
-     * premium.
+     * Bypass is granted only when the operator opted in, FastLogin says the
+     * player is a verified premium account, <em>and</em> the player already has
+     * a registered DIUser in the database.
+     *
+     * Skipping the Discord flow for an unregistered premium player would mean
+     * they could play without ever linking their Discord account — defeating
+     * the point of DILogin. So unregistered premiums still go through the
+     * normal register flow once.
      */
     public static boolean shouldBypass(String playerName) {
-        return isBypassEnabled() && isVerifiedPremium(playerName);
+        if (!isBypassEnabled() || !isVerifiedPremium(playerName))
+            return false;
+        try {
+            return MainController.getDILoginController().getDIUserDao().contains(playerName);
+        } catch (Throwable t) {
+            // DB not ready or DAO unavailable — fall back to non-bypass to be safe.
+            return false;
+        }
     }
 }

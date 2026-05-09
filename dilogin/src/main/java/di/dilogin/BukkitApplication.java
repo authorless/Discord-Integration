@@ -88,7 +88,9 @@ public class BukkitApplication extends JavaPlugin {
 		if (!api.isBungeeDetected()) {
 			// If api is in own server.
 			MainController.setDiscordController(new DiscordControllerImpl());
-			DBController.getConnect();
+			// Schema check below acquires (and properly releases) the first pooled connection,
+			// which is enough to fail fast if the DB is unreachable. Calling DBController.getConnect()
+			// directly here would leak that connection and starve the SQLite pool (size = 1).
 			if (!checkSchemaCompatibility()) {
 				plugin.getPluginLoader().disablePlugin(plugin);
 				return;

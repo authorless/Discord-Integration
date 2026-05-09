@@ -70,7 +70,7 @@ public class BungeeApplication extends Plugin {
 			return;
 		}
 
-		DBController.getConnect();
+		// Schema check acquires + releases the first pooled connection itself.
 		if (SchemaController.check(getDescription().getVersion(), getLogger())
 				== SchemaController.Result.REJECTED_NEWER_DB) {
 			plugin.onDisable();
