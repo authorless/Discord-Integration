@@ -1,6 +1,8 @@
 package di.dilogin.minecraft.bukkit;
 
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.bukkit.entity.Player;
 
@@ -14,34 +16,28 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class BukkitUtil {
 
+    /** Matches the Minecraft minor version inside any "1.X" or "1.X.Y" substring. */
+    private static final Pattern MC_VERSION = Pattern.compile("\\b1\\.(\\d{1,2})(?:\\.\\d+)?\\b");
+
     /**
-     * @param server Active server.
-     * @return The number of the version of server.
+     * Extracts the Minecraft minor version from the raw server version string
+     * (e.g. {@code "git-Paper-196 (MC: 1.20.1)"} → {@code 20}). Falls back to a
+     * high number on failure so callers default to modern-client behaviour
+     * (click-to-copy, hover events, ...).
      */
     public static int getServerVersion(String version) {
-        if (version.contains("1.17"))
-            return 17;
-        if (version.contains("1.16"))
-            return 16;
-        if (version.contains("1.15"))
-            return 15;
-        if (version.contains("1.14"))
-            return 14;
-        if (version.contains("1.13"))
-            return 13;
-        if (version.contains("1.12"))
-            return 12;
-        if (version.contains("1.11"))
-            return 11;
-        if (version.contains("1.10"))
-            return 10;
-        if (version.contains("1.9"))
-            return 9;
-        if (version.contains("1.8"))
-            return 8;
-        if (version.contains("1.7"))
-            return 7;
-        return -1;
+        if (version == null) return Integer.MAX_VALUE;
+        Matcher m = MC_VERSION.matcher(version);
+        int latest = -1;
+        while (m.find()) {
+            try {
+                int minor = Integer.parseInt(m.group(1));
+                if (minor > latest) latest = minor;
+            } catch (NumberFormatException ignored) {
+                // skip
+            }
+        }
+        return latest < 0 ? Integer.MAX_VALUE : latest;
     }
 
     /**
