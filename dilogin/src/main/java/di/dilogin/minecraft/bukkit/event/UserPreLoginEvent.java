@@ -13,6 +13,7 @@ import di.dilogin.BukkitApplication;
 import di.dilogin.controller.MainController;
 import di.dilogin.dao.DIUserDao;
 import di.dilogin.entity.DIUser;
+import di.dilogin.minecraft.ext.fastlogin.FastLoginHook;
 
 /**
  * Container class for user session end events.
@@ -37,6 +38,9 @@ public class UserPreLoginEvent implements Listener {
 	public void onAsyncPlayerPreLoginEvent(AsyncPlayerPreLoginEvent event) {
 		String username = event.getName();
 		Server server = BukkitApplication.getPlugin().getServer();
+
+		if (FastLoginHook.shouldBypass(username))
+			return;
 
 		boolean isAnotherUserOnline = server.getOnlinePlayers().stream().anyMatch(u -> u.getName().equals(username));
 

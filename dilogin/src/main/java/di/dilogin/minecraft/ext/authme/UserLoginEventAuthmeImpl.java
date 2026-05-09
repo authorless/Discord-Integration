@@ -15,6 +15,7 @@ import di.dilogin.entity.TmpMessage;
 import di.dilogin.minecraft.bukkit.event.UserLoginEvent;
 import di.dilogin.minecraft.bukkit.event.custom.DILoginEvent;
 import di.dilogin.minecraft.cache.TmpCache;
+import di.dilogin.minecraft.ext.fastlogin.FastLoginHook;
 import fr.xephi.authme.events.LoginEvent;
 
 /**
@@ -31,6 +32,8 @@ public class UserLoginEventAuthmeImpl implements UserLoginEvent {
 	@EventHandler
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		String playerName = event.getPlayer().getName();
+		if (FastLoginHook.shouldBypass(playerName))
+			return;
 		if (!userDao.contains(playerName)) {
 			initPlayerRegisterRequest(event, playerName);
 		} else {
@@ -83,6 +86,8 @@ public class UserLoginEventAuthmeImpl implements UserLoginEvent {
 	@EventHandler
 	public void onAuth(final LoginEvent event) {
 		String playerName = event.getPlayer().getName();
+		if (FastLoginHook.shouldBypass(playerName))
+			return;
 
 		if (!userDao.contains(playerName)) {
 			initPlayerAuthmeRegisterRequest(event, playerName);

@@ -4,7 +4,7 @@ version: 4.4.0
 author: Alhxe
 api-version: '1.13'
 depend: [DICore]
-softdepend: [AuthMe, Multiverse-Core, LuckPerms, nLogin]
+softdepend: [AuthMe, Multiverse-Core, LuckPerms, nLogin, FastLogin]
 commands:
     diregister:
         description: User register

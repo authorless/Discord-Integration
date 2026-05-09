@@ -10,6 +10,7 @@ import di.dilogin.entity.CodeGenerator;
 import di.dilogin.entity.DIUser;
 import di.dilogin.minecraft.cache.PrejoinCache;
 import di.dilogin.minecraft.cache.UserSessionCache;
+import di.dilogin.minecraft.ext.fastlogin.FastLoginHook;
 import net.dv8tion.jda.api.EmbedBuilder;
 import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -39,6 +40,9 @@ public class PrejoinVerificationBungeeListener implements Listener {
         String ip = event.getConnection().getAddress() != null
                 ? event.getConnection().getAddress().getAddress().getHostAddress()
                 : "unknown";
+
+        if (FastLoginHook.shouldBypass(username))
+            return;
 
         if (PrejoinCache.consumeVerified(username))
             return;

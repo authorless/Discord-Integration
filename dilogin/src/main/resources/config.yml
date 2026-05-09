@@ -22,6 +22,11 @@ authme_password_length: 20 #Length of the random password generated for AuthMe o
 prejoin_verification: false
 prejoin_verification_code_ttl_min: 10 #Minutes the code stays valid before the player must reconnect to get a new one.
 prejoin_verification_grace_sec: 60 #Seconds the player has to actually reconnect after confirming on Discord.
+
+#FastLogin premium bypass: when true and the FastLogin plugin is installed, premium-verified players skip the Discord
+#register/login flow entirely. Requires FastLogin (https://www.spigotmc.org/resources/fastlogin.14153/) to do the
+#protocol-level Mojang auth — without it the option is ignored to prevent name spoofing in offline-mode servers.
+bypass_premium_login: false
 login_time_until_kick: 30
 login_system_enabled: true #If false, login system will not work. U can use /register command as /link command.
 register_optional_enabled: false #If true, user decide if they want register.

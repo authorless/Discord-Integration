@@ -19,6 +19,7 @@ import di.dilogin.minecraft.bukkit.event.UserLoginEvent;
 import di.dilogin.minecraft.cache.TmpCache;
 import di.dilogin.minecraft.cache.UserBlockedCache;
 import di.dilogin.minecraft.cache.UserSessionCache;
+import di.dilogin.minecraft.ext.fastlogin.FastLoginHook;
 import di.dilogin.minecraft.ext.luckperms.LuckPermsController;
 import net.md_5.bungee.api.chat.ClickEvent;
 import net.md_5.bungee.api.chat.HoverEvent;
@@ -39,6 +40,10 @@ public class UserLoginInternEventImpl implements UserLoginEvent {
 	public void onPlayerJoin(PlayerJoinEvent event) {
 		String playerName = event.getPlayer().getName();
 		String playerIp = Objects.requireNonNull(event.getPlayer().getAddress()).getAddress().toString();
+
+		// Premium players verified by FastLogin skip the Discord verification flow.
+		if (FastLoginHook.shouldBypass(playerName))
+			return;
 
 		// It checks if the user has a valid session
 		if (MainController.getDILoginController().isSessionEnabled() && UserSessionCache.isValid(playerName, playerIp))
