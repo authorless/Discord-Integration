@@ -2,6 +2,9 @@ package di.dilogin.controller.impl;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Level;
 
 import di.dicore.api.DIApi;
@@ -13,6 +16,7 @@ import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Member;
 import net.dv8tion.jda.api.entities.Role;
+import net.dv8tion.jda.api.entities.User;
 
 /**
  * {@DiscordController} implementation.
@@ -171,7 +175,7 @@ public class DiscordControllerImpl implements DiscordController {
 		if (!DIUserOpt.isPresent())
 			return Optional.empty();
 
-		Optional<net.dv8tion.jda.api.entities.User> discordUserOpt = DIUserOpt.get().getPlayerDiscord();
+		Optional<User> discordUserOpt = DIUserOpt.get().getPlayerDiscord();
 		if (!discordUserOpt.isPresent() || guild == null)
 			return Optional.empty();
 
@@ -179,12 +183,14 @@ public class DiscordControllerImpl implements DiscordController {
 		try {
 			List<Member> memberList = guild
 					.findMembers(m -> m.getId().equals(discordId))
-					.get(10, java.util.concurrent.TimeUnit.SECONDS);
+					.get(10, TimeUnit.SECONDS);
 			if (!memberList.isEmpty())
 				return Optional.of(memberList.get(0));
-		} catch (java.util.concurrent.TimeoutException | InterruptedException | java.util.concurrent.ExecutionException e) {
-			if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+		} catch (TimeoutException | ExecutionException e) {
 			api.getInternalController().getLogger().warning("Failed to find Discord member for " + player + ": " + e.getMessage());
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			api.getInternalController().getLogger().warning("Interrupted while finding Discord member for " + player);
 		}
 
 		return Optional.empty();

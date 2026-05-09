@@ -13,6 +13,7 @@ import di.dilogin.entity.TmpMessage;
 import di.dilogin.minecraft.cache.TmpCache;
 import di.internal.utils.Util;
 import net.dv8tion.jda.api.EmbedBuilder;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Guild;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
@@ -186,7 +187,7 @@ public class RegisterBungeeCommand extends Command {
 	 * @param code         The code to register.
 	 */
 	private void sendServerMessage(User user, ProxiedPlayer player, MessageEmbed messageEmbed, String code) {
-		Optional<net.dv8tion.jda.api.JDA> jdaOpt = api.getCoreController().getDiscordApi();
+		Optional<JDA> jdaOpt = api.getCoreController().getDiscordApi();
 		if (!jdaOpt.isPresent()) {
 			api.getInternalController().getLogger().severe("Discord API not available for register message.");
 			return;

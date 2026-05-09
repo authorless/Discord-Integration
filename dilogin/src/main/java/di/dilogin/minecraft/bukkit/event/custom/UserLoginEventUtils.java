@@ -1,6 +1,7 @@
 package di.dilogin.minecraft.bukkit.event.custom;
 
 import java.time.Duration;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 import di.dicore.api.DIApi;
@@ -9,6 +10,7 @@ import di.dilogin.controller.file.LangController;
 import di.dilogin.dao.DIUserDao;
 import di.dilogin.entity.TmpMessage;
 import di.dilogin.minecraft.cache.TmpCache;
+import net.dv8tion.jda.api.JDA;
 import net.dv8tion.jda.api.entities.Message;
 import net.dv8tion.jda.api.entities.MessageEmbed;
 import net.dv8tion.jda.api.entities.User;
@@ -90,7 +92,7 @@ public interface UserLoginEventUtils {
 	 * @param embed  Embed message.
 	 */
 	default void sendServerMessage(User user, String playerName, MessageEmbed embed) {
-		java.util.Optional<net.dv8tion.jda.api.JDA> jdaOpt = api.getCoreController().getDiscordApi();
+		Optional<JDA> jdaOpt = api.getCoreController().getDiscordApi();
 		if (!jdaOpt.isPresent()) {
 			api.getInternalController().getLogger().severe("Discord API not available for login message.");
 			return;

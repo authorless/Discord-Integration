@@ -6,6 +6,7 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
@@ -65,7 +66,7 @@ public class Util {
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 			return Optional.empty();
-		} catch (java.util.concurrent.ExecutionException e) {
+		} catch (ExecutionException e) {
 			return Optional.empty();
 		}
 	} 
@@ -206,7 +207,7 @@ public class Util {
 
         try {
             return futureResult.get(15, TimeUnit.SECONDS);
-        } catch (TimeoutException | java.util.concurrent.ExecutionException e) {
+        } catch (TimeoutException | ExecutionException e) {
             return Optional.empty();
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();

@@ -1,7 +1,11 @@
 package di.internal.entity;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 
 import di.internal.controller.CoreController;
 import lombok.Getter;
@@ -85,29 +89,28 @@ public class DiscordBot {
 		try {
 			JDA jda = JDABuilder.createDefault(token).enableIntents(GatewayIntent.GUILD_PRESENCES,
 					GatewayIntent.DIRECT_MESSAGES, GatewayIntent.GUILD_MEMBERS, GatewayIntent.MESSAGE_CONTENT).build();
-			java.util.concurrent.CompletableFuture<JDA> ready =
-					java.util.concurrent.CompletableFuture.supplyAsync(() -> {
-						try {
-							jda.awaitReady();
-							return jda;
-						} catch (InterruptedException ie) {
-							Thread.currentThread().interrupt();
-							throw new java.util.concurrent.CompletionException(ie);
-						}
-					});
+			CompletableFuture<JDA> ready = CompletableFuture.supplyAsync(() -> {
+				try {
+					jda.awaitReady();
+					return jda;
+				} catch (InterruptedException ie) {
+					Thread.currentThread().interrupt();
+					throw new CompletionException(ie);
+				}
+			});
 			ready.get(60, TimeUnit.SECONDS);
 			this.api = Optional.of(jda);
 			onConnectToDiscord();
 			checkPermissions();
 		} catch (InterruptedException e) {
-			controller.getLogger().log(java.util.logging.Level.SEVERE, "The Bot failed to start (interrupted).", e);
+			controller.getLogger().log(Level.SEVERE, "The Bot failed to start (interrupted).", e);
 			controller.disablePlugin();
 			Thread.currentThread().interrupt();
-		} catch (java.util.concurrent.TimeoutException e) {
+		} catch (TimeoutException e) {
 			controller.getLogger().severe("The Bot failed to start: Discord did not become ready within 60s.");
 			controller.disablePlugin();
 		} catch (Exception e) {
-			controller.getLogger().log(java.util.logging.Level.SEVERE,
+			controller.getLogger().log(Level.SEVERE,
 					"The Bot failed to start. Verify the token and network connectivity.", e);
 			controller.disablePlugin();
 		}
