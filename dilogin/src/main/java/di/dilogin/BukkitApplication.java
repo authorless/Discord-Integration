@@ -14,6 +14,7 @@ import di.dilogin.controller.MainController;
 import di.dilogin.controller.impl.DILoginControllerBukkitImpl;
 import di.dilogin.controller.impl.DiscordControllerImpl;
 import di.dilogin.discord.command.DiscordRegisterBukkitCommand;
+import di.dilogin.discord.command.PrejoinConfirmDiscordCommand;
 import di.dilogin.discord.command.UserInfoDiscordCommand;
 import di.dilogin.discord.command.UserListDiscordCommand;
 import di.dilogin.discord.event.UserLoginReactionMessageBukkitEvent;
@@ -24,10 +25,12 @@ import di.dilogin.minecraft.bukkit.command.UnregisterBukkitCommand;
 import di.dilogin.minecraft.bukkit.command.UserInfoBukkitCommand;
 import di.dilogin.minecraft.bukkit.event.UserBlockEvents;
 import di.dilogin.minecraft.bukkit.event.UserLeaveEvent;
+import di.dilogin.minecraft.bukkit.event.PrejoinVerificationListener;
 import di.dilogin.minecraft.bukkit.event.UserPreLoginEvent;
 import di.dilogin.minecraft.bukkit.event.UserTeleportEvents;
 import di.dilogin.minecraft.bukkit.event.impl.UserLoginExternEventImpl;
 import di.dilogin.minecraft.bukkit.event.impl.UserLoginInternEventImpl;
+import di.dilogin.minecraft.cache.PrejoinCache;
 import di.dilogin.minecraft.cache.TmpCache;
 import di.dilogin.minecraft.ext.authme.AuthmeEvents;
 import di.dilogin.minecraft.ext.authme.UserLoginEventAuthmeImpl;
@@ -148,6 +151,29 @@ public class BukkitApplication extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(new UserLeaveEvent(), plugin);
 		getServer().getPluginManager().registerEvents(new UserTeleportEvents(), plugin);
 		getServer().getPluginManager().registerEvents(new UserPreLoginEvent(), plugin);
+		if (isPrejoinVerificationEnabled()) {
+			if (MainController.getDILoginController().isAuthmeEnabled()) {
+				getLogger().warning("prejoin_verification is enabled but AuthMe is also active. "
+						+ "AuthMe registration cannot run while the player is offline; this combination is not supported.");
+			}
+			getServer().getPluginManager().registerEvents(new PrejoinVerificationListener(), plugin);
+			schedulePrejoinPurge();
+			getLogger().info("Prejoin verification enabled: unregistered players will be kicked and must confirm via Discord.");
+		}
+	}
+
+	private void schedulePrejoinPurge() {
+		long ticks = 20L * 60L * 5L; // 5 minutes
+		getServer().getScheduler().runTaskTimerAsynchronously(plugin, PrejoinCache::purgeExpired, ticks, ticks);
+	}
+
+	private boolean isPrejoinVerificationEnabled() {
+		try {
+			return api.getInternalController().getConfigManager().contains("prejoin_verification")
+					&& api.getInternalController().getConfigManager().getBoolean("prejoin_verification");
+		} catch (Exception ignored) {
+			return false;
+		}
 	}
 
 	/**
@@ -175,6 +201,9 @@ public class BukkitApplication extends JavaPlugin {
 		api.registerDiscordCommand(new DiscordRegisterBukkitCommand());
 		api.registerDiscordCommand(new UserInfoDiscordCommand());
 		api.registerDiscordCommand(new UserListDiscordCommand());
+		if (isPrejoinVerificationEnabled()) {
+			api.registerDiscordCommand(new PrejoinConfirmDiscordCommand());
+		}
 	}
 	
 	/**

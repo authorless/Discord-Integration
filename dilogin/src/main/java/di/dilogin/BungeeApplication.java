@@ -1,5 +1,6 @@
 package di.dilogin;
 
+import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
 import di.dicore.api.DIApi;
@@ -9,6 +10,7 @@ import di.dilogin.controller.MainController;
 import di.dilogin.controller.impl.DILoginControllerBungeeImpl;
 import di.dilogin.controller.impl.DiscordControllerImpl;
 import di.dilogin.discord.command.DiscordRegisterBungeeCommand;
+import di.dilogin.discord.command.PrejoinConfirmDiscordCommand;
 import di.dilogin.discord.command.UserInfoDiscordCommand;
 import di.dilogin.discord.command.UserListDiscordCommand;
 import di.dilogin.discord.event.UserLoginReactionMessageBungeeEvent;
@@ -18,8 +20,10 @@ import di.dilogin.minecraft.bungee.command.RegisterBungeeCommand;
 import di.dilogin.minecraft.bungee.command.UnregisterBungeeCommand;
 import di.dilogin.minecraft.bungee.command.UserInfoBungeeCommand;
 import di.dilogin.minecraft.bungee.controller.ChannelMessageController;
+import di.dilogin.minecraft.bungee.event.PrejoinVerificationBungeeListener;
 import di.dilogin.minecraft.bungee.event.UserLeaveBungeeEvent;
 import di.dilogin.minecraft.bungee.event.UserLoginBungeeEvent;
+import di.dilogin.minecraft.cache.PrejoinCache;
 import di.dilogin.minecraft.cache.TmpCache;
 import di.dilogin.minecraft.ext.luckperms.LuckPermsEvents;
 import di.dilogin.minecraft.ext.luckperms.LuckPermsLoginBungeeEvent;
@@ -112,6 +116,24 @@ public class BungeeApplication extends Plugin {
 		if (MainController.getDILoginController().isLuckPermsEnabled()) {
 			initLuckPermsEvents();
 		}
+		if (isPrejoinVerificationEnabled()) {
+			this.getProxy().getPluginManager().registerListener(this, new PrejoinVerificationBungeeListener());
+			schedulePrejoinPurge();
+			getLogger().info("Prejoin verification enabled: unregistered players will be kicked and must confirm via Discord.");
+		}
+	}
+
+	private boolean isPrejoinVerificationEnabled() {
+		try {
+			return api.getInternalController().getConfigManager().contains("prejoin_verification")
+					&& api.getInternalController().getConfigManager().getBoolean("prejoin_verification");
+		} catch (Exception ignored) {
+			return false;
+		}
+	}
+
+	private void schedulePrejoinPurge() {
+		this.getProxy().getScheduler().schedule(this, PrejoinCache::purgeExpired, 5, 5, TimeUnit.MINUTES);
 	}
 	
 	/**
@@ -153,5 +175,8 @@ public class BungeeApplication extends Plugin {
 	private void initDiscordCommands() {
 		api.registerDiscordCommand(new DiscordRegisterBungeeCommand());
 		api.registerDiscordCommand(new UserInfoDiscordCommand());
+		if (isPrejoinVerificationEnabled()) {
+			api.registerDiscordCommand(new PrejoinConfirmDiscordCommand());
+		}
 	}
 }

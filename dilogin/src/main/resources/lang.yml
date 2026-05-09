@@ -13,6 +13,12 @@ register_submit: "I have sent you a message on Discord. Read it to be able to fi
 register_opt_request: "To link this account with your Discord user, use the %register_command% command on our Discord server."
 
 register_discord_arguments: "Enter the registration code."
+
+#Prejoin verification flow
+prejoin_register_kick_message: "&eYou are not registered.&r\n\nSend &6+confirm %code%&r to the bot on Discord to complete registration, then reconnect.\n&7Code valid for %ttl_min% minutes."
+prejoin_confirm_missing_code: "Usage: +confirm <code>"
+prejoin_confirm_invalid_code: "That code is invalid or has expired. Reconnect to the server to get a new one."
+prejoin_confirm_success: "Registration confirmed for %minecraft_username%. You can now connect to the server."
 register_discord_title: "Register in %minecraft_servername%."
 register_discord_success: "Your account has been successfully linked with **%minecraft_username%**."
 register_discord_desc: "To complete your registration you just have to react to this message. Once you accept, **%minecraft_username%** s account will be linked with this Discord user."

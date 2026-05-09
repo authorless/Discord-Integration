@@ -10,3 +10,4 @@ userinfo_command: userinfo
 register_discord_command: register
 userinfo_discord_command: userinfo
 userlist_discord_command: userlist
+prejoin_confirm_command: confirm
