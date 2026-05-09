@@ -58,7 +58,7 @@ public class BungeeApplication extends Plugin {
 		MainController.setDiscordController(new DiscordControllerImpl());
 		MainController.setBukkit(true);
 
-		if (!ConfigValidator.validateAndLog(api, getLogger())) {
+		if (!ConfigValidator.validateAndLog(api, this.getClass().getClassLoader(), api.getInternalController().getDataFolder(), getLogger())) {
 			plugin.onDisable();
 			return;
 		}

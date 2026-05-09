@@ -1,19 +1,19 @@
 package di.dilogin.controller;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.logging.Logger;
 
 import di.dicore.api.DIApi;
+import di.internal.controller.file.ConfigAutoMerger;
 import di.internal.controller.file.ConfigManager;
 
 /**
- * Eager startup validator: lists every required config key in one pass and
- * reports the full set of missing entries before disabling the plugin.
- *
- * Avoids the death-by-thousand-cuts UX where each missing key crashes a
- * different code path on first use.
+ * Eager startup validator. Now best-effort: if keys are missing it auto-merges
+ * the bundled defaults into the user's file (preserving custom values) and
+ * reloads. Only fails the startup if keys are still missing after the merge.
  */
 public final class ConfigValidator {
 
@@ -44,9 +44,6 @@ public final class ConfigValidator {
             "discord_embed_color"
     );
 
-    /**
-     * @return list of missing required keys ({@code emptyList} if config is OK).
-     */
     public static List<String> missingKeys(DIApi api) {
         ConfigManager cm = api.getInternalController().getConfigManager();
         List<String> missing = new ArrayList<>();
@@ -58,18 +55,34 @@ public final class ConfigValidator {
     }
 
     /**
-     * Logs missing keys (if any) at SEVERE level. Returns {@code true} when the
-     * config is valid.
+     * Validate, auto-merging bundled defaults for any missing keys before
+     * giving up. Returns {@code true} if config is OK (possibly after merge).
      */
-    public static boolean validateAndLog(DIApi api, Logger logger) {
+    public static boolean validateAndLog(DIApi api, ClassLoader classLoader, File dataFolder, Logger logger) {
         List<String> missing = missingKeys(api);
         if (missing.isEmpty())
             return true;
-        logger.severe("Configuration is invalid. Missing required keys (" + missing.size() + "):");
+
+        File userConfig = new File(dataFolder, "config.yml");
+        if (userConfig.exists()) {
+            ConfigManager cm = api.getInternalController().getConfigManager();
+            ConfigAutoMerger.MergeResult result = ConfigAutoMerger.mergeMissing(
+                    userConfig, "config.yml", classLoader, cm, logger);
+            if (result.fileChanged) {
+                missing = missingKeys(api);
+                if (missing.isEmpty()) {
+                    logger.info("All previously missing config keys were filled with bundled defaults.");
+                    return true;
+                }
+            }
+        }
+
+        logger.severe("Configuration is invalid. Missing required keys (" + missing.size()
+                + ") that could not be auto-merged:");
         for (String key : missing) {
             logger.severe("  - " + key);
         }
-        logger.severe("Add the missing entries to config.yml or regenerate the file (after backing up).");
+        logger.severe("Add the missing entries to config.yml manually.");
         return false;
     }
 }

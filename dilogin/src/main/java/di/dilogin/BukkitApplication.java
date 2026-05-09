@@ -69,7 +69,7 @@ public class BukkitApplication extends JavaPlugin {
 		MainController.setDILoginController(new DILoginControllerBukkitImpl());
 		MainController.setBukkit(true);
 
-		if (!ConfigValidator.validateAndLog(api, getLogger())) {
+		if (!ConfigValidator.validateAndLog(api, this.getClassLoader(), api.getInternalController().getDataFolder(), getLogger())) {
 			plugin.getPluginLoader().disablePlugin(plugin);
 			return;
 		}
