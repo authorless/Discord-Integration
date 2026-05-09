@@ -15,6 +15,13 @@ import lombok.NoArgsConstructor;
 public class TmpCache {
 
 	/**
+	 * Sentinel placed in the cache when a callsite wants to mark a player as
+	 * "pending" before the real {@link TmpMessage} is built. Required because
+	 * {@link ConcurrentHashMap} disallows null values.
+	 */
+	private static final TmpMessage PLACEHOLDER = new TmpMessage("", null, null, "");
+
+	/**
 	 * List of users pending login.
 	 */
 	private static final Map<String, TmpMessage> loginUserList = new ConcurrentHashMap<>();
@@ -26,20 +33,20 @@ public class TmpCache {
 
 	/**
 	 * Add a player to the pending registration list.
-	 * 
+	 *
 	 * @param playerName Bukkit player's name.
 	 */
 	public static void addRegister(String playerName, TmpMessage message) {
-		registerUserList.put(playerName, message);
+		registerUserList.put(playerName, message != null ? message : PLACEHOLDER);
 	}
 
 	/**
 	 * Add a player to the pending login list.
-	 * 
+	 *
 	 * @param playerName Bukkit player's name.
 	 */
 	public static void addLogin(String playerName, TmpMessage message) {
-		loginUserList.put(playerName, message);
+		loginUserList.put(playerName, message != null ? message : PLACEHOLDER);
 	}
 
 	/**
@@ -85,7 +92,7 @@ public class TmpCache {
 	 * @return Gets the possible message.
 	 */
 	public static Optional<TmpMessage> getRegisterMessage(String playerName) {
-		return Optional.ofNullable(registerUserList.get(playerName));
+		return unwrap(registerUserList.get(playerName));
 	}
 
 	/**
@@ -93,7 +100,7 @@ public class TmpCache {
 	 * @return Gets the possible message.
 	 */
 	public static Optional<TmpMessage> getLoginMessage(String playerName) {
-		return Optional.ofNullable(loginUserList.get(playerName));
+		return unwrap(loginUserList.get(playerName));
 	}
 
 	/**
@@ -101,12 +108,10 @@ public class TmpCache {
 	 * @return Possible register message.
 	 */
 	public static Optional<TmpMessage> getRegisterMessage(long id) {
-		try {
-			return registerUserList.values().stream().filter(tmpMessage -> tmpMessage.getMessage().getIdLong() == id)
-					.findFirst();
-		} catch (NullPointerException e) {
-			return Optional.empty();
-		}
+		return registerUserList.values().stream()
+				.filter(tmp -> tmp != PLACEHOLDER && tmp.getMessage() != null
+						&& tmp.getMessage().getIdLong() == id)
+				.findFirst();
 	}
 
 	/**
@@ -114,12 +119,10 @@ public class TmpCache {
 	 * @return Possible login message.
 	 */
 	public static Optional<TmpMessage> getLoginMessage(long id) {
-		try {
-			return loginUserList.values().stream().filter(tmpMessage -> tmpMessage.getMessage().getIdLong() == id)
-					.findFirst();
-		} catch (NullPointerException e) {
-			return Optional.empty();
-		}
+		return loginUserList.values().stream()
+				.filter(tmp -> tmp != PLACEHOLDER && tmp.getMessage() != null
+						&& tmp.getMessage().getIdLong() == id)
+				.findFirst();
 	}
 
 	/**
@@ -127,22 +130,31 @@ public class TmpCache {
 	 * @return Possible register message.
 	 */
 	public static Optional<TmpMessage> getRegisterMessageByCode(String code) {
-		try {
-			return registerUserList.values().stream().filter(tmpMessage -> tmpMessage.getCode().equals(code))
-					.findFirst();
-		} catch (NullPointerException e) {
-			return Optional.empty();
-		}
+		return registerUserList.values().stream()
+				.filter(tmp -> tmp != PLACEHOLDER && code.equals(tmp.getCode()))
+				.findFirst();
 	}
 
 	/**
 	 * Delete all messages.
 	 */
 	public static void clearAll() {
-		loginUserList.values().forEach(tmpMessage -> tmpMessage.getMessage().delete().queue());
+		loginUserList.values().forEach(tmpMessage -> {
+			if (tmpMessage != PLACEHOLDER && tmpMessage.getMessage() != null)
+				tmpMessage.getMessage().delete().queue(null, err -> { /* ignore */ });
+		});
 		loginUserList.clear();
-		registerUserList.values().forEach(tmpMessage -> tmpMessage.getMessage().delete().queue());
+		registerUserList.values().forEach(tmpMessage -> {
+			if (tmpMessage != PLACEHOLDER && tmpMessage.getMessage() != null)
+				tmpMessage.getMessage().delete().queue(null, err -> { /* ignore */ });
+		});
 		registerUserList.clear();
+	}
+
+	private static Optional<TmpMessage> unwrap(TmpMessage value) {
+		if (value == null || value == PLACEHOLDER)
+			return Optional.empty();
+		return Optional.of(value);
 	}
 
 }
