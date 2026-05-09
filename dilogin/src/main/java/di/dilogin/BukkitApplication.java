@@ -70,6 +70,10 @@ public class BukkitApplication extends JavaPlugin {
 		plugin = getPlugin(getClass());
 
 		connectWithCoreApi();
+		if (api == null || !isEnabled()) {
+			// DICore was missing or disabled — already logged. Bail before touching anything.
+			return;
+		}
 
 		MainController.setDIApi(api);
 		MainController.setDILoginController(new DILoginControllerBukkitImpl());

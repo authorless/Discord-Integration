@@ -17,3 +17,7 @@ status_content: 'There are %minecraft_players% players'
 #0 -> None
 #1 -> Updates when a player connects/disconnects
 #2 -> Updates every 5 minutes
+
+#When true, the server (or proxy) is shut down if DICore cannot start because the config is invalid.
+#Useful for production: avoids running with broken Discord auth without anyone noticing.
+shutdown_server_on_critical_failure: true

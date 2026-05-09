@@ -26,12 +26,47 @@ public class BungeeApplication extends Plugin {
     @Override
     public void onEnable() {
         Plugin plugin = this.getProxy().getPluginManager().getPlugin("DICore");
-        internalController = new CoreControllerBungeeImpl(plugin, this.getClass().getClassLoader());
+        try {
+            internalController = new CoreControllerBungeeImpl(plugin, this.getClass().getClassLoader());
+        } catch (Throwable t) {
+            failFast("DICore could not initialise the controller: " + t.getMessage());
+            return;
+        }
+
+        if (internalController == null || internalController.getBot() == null
+                || !internalController.getBot().getApi().isPresent()) {
+            failFast("DICore failed to start because the configuration is incomplete. Fix config.yml and restart the proxy.");
+            return;
+        }
 
         BotStatusBungeeEvent.init(plugin);
         initMetrics();
 
         getLogger().info("Plugin started");
+    }
+
+    private void failFast(String message) {
+        getLogger().severe(message);
+        try {
+            this.onDisable();
+        } catch (Throwable ignored) {
+            // already in a bad state
+        }
+        if (shouldShutdownServerOnFailure()) {
+            getLogger().severe("Shutting the proxy down (shutdown_server_on_critical_failure=true).");
+            this.getProxy().stop("DILogin/DICore failed to start. Fix the configuration.");
+        }
+    }
+
+    private boolean shouldShutdownServerOnFailure() {
+        try {
+            return internalController != null
+                    && internalController.getConfigManager() != null
+                    && internalController.getConfigManager().contains("shutdown_server_on_critical_failure")
+                    && internalController.getConfigManager().getBoolean("shutdown_server_on_critical_failure");
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     private void initMetrics() {
