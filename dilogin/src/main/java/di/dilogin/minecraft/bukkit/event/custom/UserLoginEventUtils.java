@@ -90,12 +90,23 @@ public interface UserLoginEventUtils {
 	 * @param embed  Embed message.
 	 */
 	default void sendServerMessage(User user, String playerName, MessageEmbed embed) {
-		TextChannel serverchannel = api.getCoreController().getDiscordApi().get()
+		java.util.Optional<net.dv8tion.jda.api.JDA> jdaOpt = api.getCoreController().getDiscordApi();
+		if (!jdaOpt.isPresent()) {
+			api.getInternalController().getLogger().severe("Discord API not available for login message.");
+			return;
+		}
+		TextChannel serverchannel = jdaOpt.get()
 				.getTextChannelById(api.getInternalController().getConfigManager().getLong("channel"));
 
+		if (serverchannel == null) {
+			api.getInternalController().getLogger().severe("Configured 'channel' not found, cannot send login message.");
+			return;
+		}
 		serverchannel.sendMessage(user.getAsMention()).delay(Duration.ofSeconds(10)).flatMap(Message::delete).queue();
-		Message servermessage = serverchannel.sendMessageEmbeds(embed).submit().join();
-		servermessage.addReaction(EMOJI).queue();
-		TmpCache.addLogin(playerName, new TmpMessage(playerName, user, servermessage, null));
+		serverchannel.sendMessageEmbeds(embed).queue(servermessage -> {
+			servermessage.addReaction(EMOJI).queue();
+			TmpCache.addLogin(playerName, new TmpMessage(playerName, user, servermessage, null));
+		}, err -> api.getInternalController().getLogger()
+				.warning("Failed to send login message: " + err.getMessage()));
 	}
 }

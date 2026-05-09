@@ -71,7 +71,9 @@ public class EventsListener {
      */
     private static void kick(Entry entry) {
         MessageEmbed embed = getEmbed(entry, "kick");
-        channel.sendMessageEmbeds(embed).queue();
+        channel.sendMessageEmbeds(embed).queue(null,
+                err -> api.getInternalController().getLogger()
+                        .log(Level.WARNING, "Failed to send LiteBans event message", err));
     }
 
     /**
@@ -81,7 +83,9 @@ public class EventsListener {
      */
     private static void ban(Entry entry) {
         MessageEmbed embed = getEmbed(entry, "ban");
-        channel.sendMessageEmbeds(embed).queue();
+        channel.sendMessageEmbeds(embed).queue(null,
+                err -> api.getInternalController().getLogger()
+                        .log(Level.WARNING, "Failed to send LiteBans event message", err));
     }
 
     /**
@@ -91,7 +95,9 @@ public class EventsListener {
      */
     private static void mute(Entry entry) {
         MessageEmbed embed = getEmbed(entry, "mute");
-        channel.sendMessageEmbeds(embed).queue();
+        channel.sendMessageEmbeds(embed).queue(null,
+                err -> api.getInternalController().getLogger()
+                        .log(Level.WARNING, "Failed to send LiteBans event message", err));
     }
 
     /**
@@ -101,7 +107,9 @@ public class EventsListener {
      */
     private static void warn(Entry entry) {
         MessageEmbed embed = getEmbed(entry, "warn");
-        channel.sendMessageEmbeds(embed).queue();
+        channel.sendMessageEmbeds(embed).queue(null,
+                err -> api.getInternalController().getLogger()
+                        .log(Level.WARNING, "Failed to send LiteBans event message", err));
     }
 
     /**

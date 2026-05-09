@@ -175,17 +175,26 @@ public interface DILoginController {
 		if (!optDIUser.isPresent())
 			return;
 
-		JDA jda = api.getCoreController().getDiscordApi().get();
-		Guild guild = api.getCoreController().getGuild().get();
-		
-		Member member = guild.retrieveMemberById(user.getIdLong()).complete();
-		Member bot = guild.retrieveMemberById(jda.getSelfUser().getIdLong()).complete();
+		Optional<JDA> jdaOpt = api.getCoreController().getDiscordApi();
+		Optional<Guild> guildOpt = api.getCoreController().getGuild();
+		if (!jdaOpt.isPresent() || !guildOpt.isPresent())
+			return;
+		JDA jda = jdaOpt.get();
+		Guild guild = guildOpt.get();
 
-		if (bot.canInteract(member)) {
-			member.modifyNickname(playerName).queue();
-		} else {
-			api.getInternalController().getLogger()
-					.info("Cannot change the nickname of " + playerName + ". Insufficient permissions.");
-		}
+		guild.retrieveMemberById(user.getIdLong()).queue(member ->
+			guild.retrieveMemberById(jda.getSelfUser().getIdLong()).queue(bot -> {
+				if (bot.canInteract(member)) {
+					member.modifyNickname(playerName).queue(null, err ->
+						api.getInternalController().getLogger()
+							.warning("Failed to modify nickname for " + playerName + ": " + err.getMessage()));
+				} else {
+					api.getInternalController().getLogger()
+							.info("Cannot change the nickname of " + playerName + ". Insufficient permissions.");
+				}
+			}, err -> api.getInternalController().getLogger()
+					.warning("Failed to retrieve bot member: " + err.getMessage())),
+			err -> api.getInternalController().getLogger()
+					.warning("Failed to retrieve member " + user.getIdLong() + ": " + err.getMessage()));
 	}
 }

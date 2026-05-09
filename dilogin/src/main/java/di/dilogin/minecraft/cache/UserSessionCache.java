@@ -1,8 +1,9 @@
 package di.dilogin.minecraft.cache;
 
 import java.util.Calendar;
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import di.dilogin.controller.MainController;
 import di.dilogin.dao.DIUserDao;
@@ -20,7 +21,7 @@ public class UserSessionCache {
 	/**
 	 * List of user sessions.
 	 */
-	private static final HashMap<UserSession, Long> sessions = new HashMap<>();
+	private static final Map<UserSession, Long> sessions = new ConcurrentHashMap<>();
 
 	/**
 	 * User manager in the database.
@@ -49,13 +50,14 @@ public class UserSessionCache {
 			return false;
 
 		UserSession user = userOpt.get();
-		
+
 		if (!user.getIp().equals(ip))
 			return false;
 
-		if (Calendar.getInstance().getTimeInMillis() > sessions.get(user))
+		Long expiry = sessions.get(user);
+		if (expiry == null || Calendar.getInstance().getTimeInMillis() > expiry)
 			return false;
-		
+
 		if (!userDao.contains(name)) {
 			sessions.remove(user);
 			return false;

@@ -91,10 +91,15 @@ public class DiscordControllerImpl implements DiscordController {
 
 		Member member = optMember.get();
 		Guild guild = getGuild();
+		if (guild == null) return;
 		Role role = guild.getRoleById(roleid);
+		if (role == null) {
+			api.getInternalController().getLogger().log(Level.SEVERE,
+					"Could not remove role " + roleid + " from " + member.getUser().getAsTag() + ": role not found.");
+			return;
+		}
 
 		try {
-			assert role != null;
 			guild.removeRoleFromMember(member, role).queue();
 			api.getInternalController().getLogger().info(role.getName() + " role has been removed from "
 					+ member.getUser().getAsTag() + ". Reason: " + reason);
@@ -166,11 +171,21 @@ public class DiscordControllerImpl implements DiscordController {
 		if (!DIUserOpt.isPresent())
 			return Optional.empty();
 
-		List<Member> memberList = guild
-				.findMembers(m -> m.getId().equals(DIUserOpt.get().getPlayerDiscord().get().getId())).get();
+		Optional<net.dv8tion.jda.api.entities.User> discordUserOpt = DIUserOpt.get().getPlayerDiscord();
+		if (!discordUserOpt.isPresent() || guild == null)
+			return Optional.empty();
 
-		if (!memberList.isEmpty())
-			return Optional.of(memberList.get(0));
+		String discordId = discordUserOpt.get().getId();
+		try {
+			List<Member> memberList = guild
+					.findMembers(m -> m.getId().equals(discordId))
+					.get(10, java.util.concurrent.TimeUnit.SECONDS);
+			if (!memberList.isEmpty())
+				return Optional.of(memberList.get(0));
+		} catch (java.util.concurrent.TimeoutException | InterruptedException | java.util.concurrent.ExecutionException e) {
+			if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+			api.getInternalController().getLogger().warning("Failed to find Discord member for " + player + ": " + e.getMessage());
+		}
 
 		return Optional.empty();
 	}
@@ -180,7 +195,9 @@ public class DiscordControllerImpl implements DiscordController {
 	 * @return Discord main guild.
 	 */
 	private Guild getGuild() {
-		JDA jda = api.getCoreController().getDiscordApi().get();
-		return jda.getGuildById(api.getCoreController().getBot().getServerId());
+		Optional<JDA> jdaOpt = api.getCoreController().getDiscordApi();
+		if (!jdaOpt.isPresent())
+			return null;
+		return jdaOpt.get().getGuildById(api.getCoreController().getBot().getServerId());
 	}
 }

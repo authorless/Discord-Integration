@@ -4,10 +4,16 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ObjectStreamClass;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 import di.dilogin.controller.MainController;
 import di.dilogin.entity.UserSession;
@@ -21,6 +27,36 @@ public class SessionFileController {
 
     /** The file where sessions will be stored. */
     private static final File SESSION_FILE = new File(MainController.getDIApi().getInternalController().getDataFolder(), "sessions.ser");
+
+    /** Whitelist of classes allowed during deserialization to prevent gadget-chain attacks. */
+    private static final Set<String> ALLOWED_CLASSES = new HashSet<>(Arrays.asList(
+            "java.util.HashMap",
+            "java.lang.Long",
+            "java.lang.Number",
+            "java.lang.String",
+            "di.dilogin.entity.UserSession"
+    ));
+
+    /**
+     * Hardened ObjectInputStream that rejects any class outside the whitelist.
+     */
+    private static final class WhitelistedObjectInputStream extends ObjectInputStream {
+        WhitelistedObjectInputStream(InputStream in) throws IOException {
+            super(in);
+        }
+
+        @Override
+        protected Class<?> resolveClass(ObjectStreamClass desc) throws IOException, ClassNotFoundException {
+            String name = desc.getName();
+            if (name.startsWith("[")) {
+                return super.resolveClass(desc);
+            }
+            if (!ALLOWED_CLASSES.contains(name)) {
+                throw new InvalidClassException("Unauthorized deserialization attempt: " + name);
+            }
+            return super.resolveClass(desc);
+        }
+    }
 
     /**
      * Adds a user session with the specified expiration time.
@@ -104,10 +140,17 @@ public class SessionFileController {
             return new HashMap<>();
         }
 
-        try (ObjectInputStream inputStream = new ObjectInputStream(new FileInputStream(sessionFile))) {
-            return (HashMap<UserSession, Long>) inputStream.readObject();
+        try (ObjectInputStream inputStream = new WhitelistedObjectInputStream(new FileInputStream(sessionFile))) {
+            Object obj = inputStream.readObject();
+            if (!(obj instanceof HashMap)) {
+                MainController.getDIApi().getInternalController().getLogger()
+                        .severe("Unexpected sessions.ser contents (not a HashMap), discarding.");
+                return new HashMap<>();
+            }
+            return (HashMap<UserSession, Long>) obj;
         } catch (IOException | ClassNotFoundException e) {
-            e.printStackTrace();
+            MainController.getDIApi().getInternalController().getLogger()
+                    .severe("Error loading sessions: " + e.getMessage());
             return new HashMap<>();
         }
     }

@@ -85,12 +85,8 @@ public class UserData {
 	 *         not exist, it will take you to the spawn of the first world on the
 	 *         list.
 	 */
-	public Location asLocation() {
-		Optional<World> optWorld = getWorldByName();
-		if (optWorld.isPresent())
-			return new Location(optWorld.get(), x, y, z, yaw, pitch);
-
-		return null;
+	public Optional<Location> asLocation() {
+		return getWorldByName().map(w -> new Location(w, x, y, z, yaw, pitch));
 	}
 
 	/**

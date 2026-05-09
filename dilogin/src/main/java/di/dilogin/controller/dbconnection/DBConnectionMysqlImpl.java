@@ -24,11 +24,18 @@ public class DBConnectionMysqlImpl implements DBConnection {
     private static Connection connection = null;
 
     /**
-     * @return Connection to the database. If it does not exist, it creates it.
+     * @return Connection to the database. If it does not exist or is stale, recreates it.
      */
-    public Connection getConnect() {
-        if (connection == null)
+    public synchronized Connection getConnect() {
+        try {
+            if (connection == null || connection.isClosed() || !connection.isValid(2)) {
+                initDB();
+            }
+        } catch (SQLException e) {
+            MainController.getDIApi().getInternalController().getLogger()
+                    .log(Level.SEVERE, "DBConnectionMysqlImpl - getConnect validation", e);
             initDB();
+        }
         return connection;
     }
 

@@ -32,9 +32,15 @@ public class DBConnectionSqliteImpl implements DBConnection {
 	/**
 	 * @return Connection to the database. If it does not exist, it creates it.
 	 */
-	public Connection getConnect() {
-		if (connection == null)
+	public synchronized Connection getConnect() {
+		try {
+			if (connection == null || connection.isClosed()) {
+				initDB();
+			}
+		} catch (SQLException e) {
+			controller.getLogger().log(Level.SEVERE, "DBConnectionSqliteImpl - getConnect validation", e);
 			initDB();
+		}
 		return connection;
 	}
 

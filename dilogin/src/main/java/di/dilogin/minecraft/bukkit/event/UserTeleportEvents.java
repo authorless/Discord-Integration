@@ -76,8 +76,10 @@ public class UserTeleportEvents implements Listener {
 			return;
 
 		UserData userData = optUserData.get();
-		Location location = userData.asLocation();
-		player.teleport(location);
+		Optional<Location> locationOpt = userData.asLocation();
+		if (locationOpt.isPresent()) {
+			player.teleport(locationOpt.get());
+		}
 		UserDataController.removeFile(uuid);
 	}
 

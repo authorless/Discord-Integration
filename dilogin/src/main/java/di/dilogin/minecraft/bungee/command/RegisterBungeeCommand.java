@@ -186,15 +186,25 @@ public class RegisterBungeeCommand extends Command {
 	 * @param code         The code to register.
 	 */
 	private void sendServerMessage(User user, ProxiedPlayer player, MessageEmbed messageEmbed, String code) {
-		TextChannel serverchannel = api.getCoreController().getDiscordApi().get()
+		Optional<net.dv8tion.jda.api.JDA> jdaOpt = api.getCoreController().getDiscordApi();
+		if (!jdaOpt.isPresent()) {
+			api.getInternalController().getLogger().severe("Discord API not available for register message.");
+			return;
+		}
+		TextChannel serverchannel = jdaOpt.get()
 				.getTextChannelById(api.getInternalController().getConfigManager().getLong("channel"));
 
-		assert serverchannel != null;
+		if (serverchannel == null) {
+			api.getInternalController().getLogger().severe("Configured 'channel' not found, cannot send register message.");
+			return;
+		}
 		serverchannel.sendMessage(user.getAsMention()).delay(Duration.ofSeconds(10)).flatMap(Message::delete).queue();
 
-		Message servermessage = serverchannel.sendMessageEmbeds(messageEmbed).submit().join();
-		servermessage.addReaction(Emoji.fromFormatted(emoji)).queue();
-		TmpCache.addRegister(player.getName(), new TmpMessage(player.getName(), user, servermessage, code));
+		serverchannel.sendMessageEmbeds(messageEmbed).queue(servermessage -> {
+			servermessage.addReaction(Emoji.fromFormatted(emoji)).queue();
+			TmpCache.addRegister(player.getName(), new TmpMessage(player.getName(), user, servermessage, code));
+		}, err -> api.getInternalController().getLogger()
+				.warning("Failed to send register message: " + err.getMessage()));
 	}
 
 	/**

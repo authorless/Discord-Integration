@@ -1,6 +1,8 @@
 package di.internal.entity;
 
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import net.dv8tion.jda.api.events.message.MessageReceivedEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -66,7 +68,8 @@ public class CommandHandler extends ListenerAdapter {
 			commands.get(command)
 					.execute(getMessageWithoutCommand(command, event.getMessage().getContentDisplay(), prefix), event);
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.getLogger(CommandHandler.class.getName())
+					.log(Level.SEVERE, "Error executing Discord command '" + command + "'", e);
 		}
 	}
 

@@ -1,6 +1,8 @@
 package di.internal.entity;
 
 import java.util.HashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import net.dv8tion.jda.api.events.interaction.command.SlashCommandInteractionEvent;
 import net.dv8tion.jda.api.hooks.ListenerAdapter;
@@ -43,10 +45,17 @@ public class SlashCommandHandler extends ListenerAdapter {
 		
 		String command = event.getName();
 
+		DiscordSlashCommand handler = commands.get(command);
+		if (handler == null) {
+			Logger.getLogger(SlashCommandHandler.class.getName())
+					.warning("No handler registered for slash command '" + command + "'");
+			return;
+		}
 		try {
-			commands.get(command).execute(event);
+			handler.execute(event);
 		} catch (Exception e) {
-			e.printStackTrace();
+			Logger.getLogger(SlashCommandHandler.class.getName())
+					.log(Level.SEVERE, "Error executing slash command '" + command + "'", e);
 		}
 	}
 }

@@ -2,7 +2,7 @@ package di.internal.controller.file;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -51,10 +51,10 @@ public class ConfigManager implements FileController {
                 saveResource(controller, dataFolder, FILENAME, classLoader, false);
             }
             Yaml yaml = new Yaml();
-            try {
-                this.yamlData = yaml.load(new FileInputStream(customConfigFile));
-            } catch (FileNotFoundException e) {
-                controller.getLogger().log(Level.SEVERE, "ConfiManager constructor", e);
+            try (FileInputStream fis = new FileInputStream(customConfigFile)) {
+                this.yamlData = yaml.load(fis);
+            } catch (IOException e) {
+                controller.getLogger().log(Level.SEVERE, "ConfigManager constructor", e);
             }
         } else {
             this.yamlData = getOriginalYamlContent(FILENAME, classLoader);

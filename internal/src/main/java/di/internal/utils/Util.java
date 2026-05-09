@@ -6,7 +6,9 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Logger;
 
 import di.internal.controller.ChannelController;
 import di.internal.controller.CoreController;
@@ -53,12 +55,17 @@ public class Util {
 				return cachedUserOpt;
 
 			CompletableFuture<User> request = api.retrieveUserById(id).submit();
-			Optional<User> userOpt = Optional.ofNullable(request.join());
+			Optional<User> userOpt = Optional.ofNullable(request.get(10, TimeUnit.SECONDS));
 			if (userOpt.isPresent())
 				return userOpt;
 
 			return Optional.empty();
-		} catch (ErrorResponseException e) {
+		} catch (ErrorResponseException | TimeoutException e) {
+			return Optional.empty();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return Optional.empty();
+		} catch (java.util.concurrent.ExecutionException e) {
 			return Optional.empty();
 		}
 	} 
@@ -70,16 +77,9 @@ public class Util {
      * @param seconds Time in which it will be erased.
      */
     public static void deleteMessage(Message message, int seconds) {
-        Executors.newCachedThreadPool().submit(() -> {
-            int millis = seconds * 1000;
-            try {
-                Thread.sleep(millis);
-                message.delete().queue();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-                Thread.currentThread().interrupt();
-            }
-        });
+        message.delete().queueAfter(seconds, TimeUnit.SECONDS, null,
+                err -> Logger.getLogger(Util.class.getName())
+                        .warning("Failed to delete message: " + err.getMessage()));
     }
 
     /**
@@ -189,7 +189,8 @@ public class Util {
                                .count();
 
             if (count > 100) {
-                System.out.println("More than 100 names have been found that begin with " + name);
+                Logger.getLogger(Util.class.getName())
+                        .warning("More than 100 names have been found that begin with " + name);
                 futureResult.complete(Optional.empty());
             } else {
                 Optional<Member> matchingMember = members.stream()
@@ -201,8 +202,15 @@ public class Util {
                     futureResult.complete(Optional.empty());
                 }
             }
-        });
+        }).onError(err -> futureResult.complete(Optional.empty()));
 
-        return futureResult.join();
+        try {
+            return futureResult.get(15, TimeUnit.SECONDS);
+        } catch (TimeoutException | java.util.concurrent.ExecutionException e) {
+            return Optional.empty();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Optional.empty();
+        }
     }
 }

@@ -78,7 +78,7 @@ public class UserLoginReactionMessageBukkitEvent extends ListenerAdapter {
             return;
 
         
-        String password = CodeGenerator.getCode(8, api);
+        String password = CodeGenerator.getCode(20, api);
         
         if (MainController.getDILoginController().isRegisterGiveRoleEnabled()) {
             giveRolesToUser(event instanceof MessageReactionAddEvent ? ((MessageReactionAddEvent) event).getMember() : null, player.getName());

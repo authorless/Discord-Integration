@@ -1,7 +1,8 @@
 package di.dilogin.minecraft.cache;
 
-import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 import di.dilogin.entity.TmpMessage;
 import lombok.AccessLevel;
@@ -16,12 +17,12 @@ public class TmpCache {
 	/**
 	 * List of users pending login.
 	 */
-	private static final HashMap<String, TmpMessage> loginUserList = new HashMap<>();
+	private static final Map<String, TmpMessage> loginUserList = new ConcurrentHashMap<>();
 
 	/**
 	 * List of users pending registration.
 	 */
-	private static final HashMap<String, TmpMessage> registerUserList = new HashMap<>();
+	private static final Map<String, TmpMessage> registerUserList = new ConcurrentHashMap<>();
 
 	/**
 	 * Add a player to the pending registration list.
